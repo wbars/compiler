@@ -5,6 +5,7 @@ import me.wbars.scanner.models.Ridge;
 import me.wbars.scanner.models.State;
 import me.wbars.scanner.models.StateComponent;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -12,7 +13,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class NFA {
+    @FunctionalInterface
+    private interface ComponentMapper {
+        StateComponent apply(CharacterIterator iterator, StateComponent currentComponent);
+    }
+
     private static final Set<Character> reservedChars = new HashSet<>();
+    public static final Map<Character, StateComponent> trivialComponents;
+    private static final Map<Character, ComponentMapper> reservedMappers;
 
     static {
         reservedChars.add('(');
@@ -21,59 +29,67 @@ public class NFA {
         reservedChars.add('|');
         reservedChars.add('+');
         reservedChars.add('\\');
-    }
 
-    public static StateComponent parse(String regexp) {
-        return parse(new CharacterIterator(regexp), getTrivialComponents(regexp));
-    }
+        trivialComponents = IntStream.concat(IntStream.rangeClosed(65, 90),
+                IntStream.concat(IntStream.rangeClosed(97, 122),
+                        IntStream.rangeClosed(48, 57)))
+                .mapToObj(c -> (char) c)
+                .distinct()
+                .filter(c -> !reservedChars.contains(c))
+                .collect(Collectors.toMap(c -> c, NFA::create));
 
-    private static StateComponent getNextComponent(Map<Character, StateComponent> trivialComponents,
-                                                   CharacterIterator iterator,
-                                                   StateComponent currentComponent) {
-        char ch = iterator.next();
-        if (!reservedChars.contains(ch)) {
-            StateComponent component = trivialComponents.get(ch);
-            return currentComponent != null ? concat(currentComponent, component) : component;
-        } else if (ch == '(') {
+        reservedMappers = new HashMap<>();
+        reservedMappers.put('(', (iterator, currentComponent) -> {
             StateComponent component = extractComponentFromParanthesis(iterator);
             return currentComponent != null ? concat(currentComponent, component) : component;
-        } else if (ch == '|') {
-            StateComponent component = parse(iterator, trivialComponents);
+        });
+        reservedMappers.put('|', (iterator, currentComponent) -> {
+            StateComponent component = parse(iterator);
             return currentComponent != null ? or(currentComponent, component) : component;
-        } else if (ch == '\\') {
+        });
+        reservedMappers.put('\\', (iterator, currentComponent) -> {
             char reserved = iterator.next();
-            StateComponent component = null;
-            if (reserved == 'd') {
-                component = anyFromRange(IntStream.rangeClosed(48, 57), trivialComponents);
-            } else if (reserved == 'w') {
-                component = anyFromRange(IntStream.rangeClosed(97, 122), trivialComponents);
-            } else if (reserved == 'W') {
-                component = anyFromRange(IntStream.rangeClosed(65, 90), trivialComponents);
-            }
+            StateComponent component = anyFromRange(getCharRange(reserved));
             return currentComponent != null ? concat(currentComponent, component) : component;
-        } else if (ch == '*') {
-            return closure(currentComponent);
-        } else if (ch == '+') {
-            return atLeastOnce(currentComponent);
-        }
+        });
+        reservedMappers.put('*', (iterator, currentComponent) -> closure(currentComponent));
+        reservedMappers.put('+', (iterator, currentComponent) -> atLeastOnce(currentComponent));
+    }
+
+    private static IntStream getCharRange(char macro) {
+        if (macro == 'd') return IntStream.rangeClosed(48, 57);
+        if (macro == 'w') return IntStream.rangeClosed(97, 122);
+        if (macro == 'W') return IntStream.rangeClosed(65, 90);
         return null;
     }
 
-    private static StateComponent anyFromRange(IntStream chars, Map<Character, StateComponent> trivialComponents) {
+    public static StateComponent parse(String regexp) {
+        return parse(new CharacterIterator(regexp));
+    }
+
+    private static StateComponent getNextComponent(CharacterIterator iterator, StateComponent currentComponent) {
+        char ch = iterator.next();
+        if (!reservedChars.contains(ch)) {
+            return currentComponent != null ? concat(currentComponent, trivialComponents.get(ch)) : trivialComponents.get(ch);
+        }
+        if (!reservedMappers.containsKey(ch)) throw new RuntimeException();
+        return reservedMappers.get(ch).apply(iterator, currentComponent);
+    }
+
+    private static StateComponent anyFromRange(IntStream chars) {
         return chars.boxed()
                 .map(c -> trivialComponents.get((char) c.intValue()))
                 .reduce(NFA::or).orElseThrow(RuntimeException::new);
-
     }
 
     private static StateComponent atLeastOnce(StateComponent component) {
         return concat(component, closure(component));
     }
 
-    private static StateComponent parse(CharacterIterator iterator, Map<Character, StateComponent> trivialComponents) {
+    private static StateComponent parse(CharacterIterator iterator) {
         StateComponent currentComponent = null;
         while (iterator.hasNext()) {
-            currentComponent = getNextComponent(trivialComponents, iterator, currentComponent);
+            currentComponent = getNextComponent(iterator, currentComponent);
         }
         currentComponent.getTail().setTerminal(true);
         return currentComponent;
@@ -90,16 +106,6 @@ public class NFA {
         }
         if (parenthsCounter != 0) return null;
         return parse(sb.deleteCharAt(sb.length() - 1).toString());
-    }
-
-    private static Map<Character, StateComponent> getTrivialComponents(String regexp) {
-        return IntStream.concat(IntStream.rangeClosed(65, 90),
-                IntStream.concat(IntStream.rangeClosed(97, 122),
-                        IntStream.rangeClosed(48, 57)))
-                .mapToObj(c -> (char) c)
-                .distinct()
-                .filter(c -> !reservedChars.contains(c))
-                .collect(Collectors.toMap(c -> c, NFA::create));
     }
 
 
@@ -164,12 +170,9 @@ public class NFA {
 
     public static void toNonEpsilonNfa(StateComponent component) {
         addDirectRidges(component);
-        addDirectRidges(component);
         addTerminalStates(component);
         addTransitiveRidges(component);
         removeEmptyRidges(component);
-
-        System.out.println("Done");
     }
 
     private static void removeEmptyRidges(StateComponent component) {
@@ -209,16 +212,22 @@ public class NFA {
 
     private static void addDirectRidges(StateComponent component) {
         Set<State> states = getStates(component);
+        Map<State, Set<State>> closures = new HashMap<>();
         for (State state : states) {
-            Set<Ridge> directRidges = new HashSet<>();
-            for (Ridge ridge : state.getRidges()) {
-                for (Ridge ridge1 : ridge.getTo().getRidges()) {
-                    if (ridge.isEmpty() && ridge1.isEmpty()) {
-                        directRidges.add(Ridge.empty(state, ridge1.getTo()));
-                    }
-                }
-            }
-            directRidges.forEach(r -> state.addEmptyRidge(r.getTo()));
+            Set<State> accessibleStates = new HashSet<>();
+            epsilonDfs(state, accessibleStates, new HashSet<>());
+            closures.put(state, accessibleStates);
+        }
+        closures.forEach((state, closure) -> closure.forEach(state::addEmptyRidge));
+    }
+
+    private static void epsilonDfs(State state, Set<State> accessibleStates, Set<State> visited) {
+        for (Ridge r : state.getRidges()) {
+            if (visited.contains(r.getTo()) || !r.isEmpty()) continue;
+
+            visited.add(r.getTo());
+            accessibleStates.add(r.getTo());
+            epsilonDfs(r.getTo(), accessibleStates, visited);
         }
     }
 }

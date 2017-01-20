@@ -6,7 +6,6 @@ import me.wbars.scanner.models.State;
 import me.wbars.scanner.models.StateComponent;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 
@@ -18,7 +17,7 @@ public class DFA {
         queue.add(startNode);
         visitedNodes.put(startNode.hashCode(), startNode);
 
-        Set<Character> alphabet = getAlphabet(component);
+        Set<Character> alphabet = getAlphabet();
         while (!queue.isEmpty()) {
             DfaNode nextNode = queue.poll();
             for (char letter : alphabet) {
@@ -38,12 +37,8 @@ public class DFA {
         return startNode;
     }
 
-    private static Set<Character> getAlphabet(StateComponent component) {
-        return NFA.getRidges(component).stream()
-                .filter(r -> !r.isEmpty())
-                .map(Ridge::getCh)
-                .distinct()
-                .collect(Collectors.toSet());
+    private static Set<Character> getAlphabet() {
+        return NFA.trivialComponents.keySet();
     }
 
 

@@ -26,4 +26,8 @@ public class CharacterIterator implements Iterator<Character> {
     public void remove() {
         throw new UnsupportedOperationException();
     }
+
+    public Character current() {
+        return str.charAt(pos);
+    }
 }
