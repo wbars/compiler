@@ -6,17 +6,19 @@ import me.wbars.scanner.models.State;
 import me.wbars.scanner.models.StateComponent;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 
 public class DFA {
-    public static DfaNode transfortm(StateComponent component, Set<Character> alphabet) {
+    public static DfaNode transform(StateComponent component) {
         Queue<DfaNode> queue = new ArrayDeque<>();
         Map<Integer, DfaNode> visitedNodes = new HashMap<>();
         DfaNode startNode = new DfaNode(new HashSet<>(singletonList(component.getHead())));
         queue.add(startNode);
         visitedNodes.put(startNode.hashCode(), startNode);
 
+        Set<Character> alphabet = getAlphabet(component);
         while (!queue.isEmpty()) {
             DfaNode nextNode = queue.poll();
             for (char letter : alphabet) {
@@ -36,6 +38,14 @@ public class DFA {
         return startNode;
     }
 
+    private static Set<Character> getAlphabet(StateComponent component) {
+        return NFA.getRidges(component).stream()
+                .filter(r -> !r.isEmpty())
+                .map(Ridge::getCh)
+                .distinct()
+                .collect(Collectors.toSet());
+    }
+
 
     private static Set<State> getAccessibleStates(DfaNode node, char ridge) {
         Set<State> accessibleStates = new HashSet<>();
@@ -49,10 +59,10 @@ public class DFA {
     private static void dfs(State state, char ridge, Set<State> accessibleStates, Set<State> visited) {
         for (Ridge r : state.getRidges()) {
             if (visited.contains(r.getTo()) || r.getCh() != ridge) continue;
+
             visited.add(r.getTo());
             accessibleStates.add(r.getTo());
             dfs(r.getTo(), ridge, accessibleStates, visited);
-
         }
     }
 }

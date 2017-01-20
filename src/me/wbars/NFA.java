@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class NFA {
     private static final Set<Character> reservedChars = new HashSet<>();
@@ -18,14 +19,11 @@ public class NFA {
         reservedChars.add(')');
         reservedChars.add('*');
         reservedChars.add('|');
+        reservedChars.add('\\');
     }
 
     public static StateComponent parse(String regexp) {
         return parse(new CharacterIterator(regexp), getTrivialComponents(regexp));
-    }
-
-    public static Set<Character> alphabet(String str) {
-        return getTrivialComponents(str).keySet();
     }
 
     private static StateComponent getNextComponent(Map<Character, StateComponent> trivialComponents,
@@ -41,6 +39,26 @@ public class NFA {
         } else if (ch == '|') {
             StateComponent component = parse(iterator, trivialComponents);
             return currentComponent != null ? or(currentComponent, component) : component;
+        } else if (ch == '\\') {
+            char reserved = iterator.next();
+            StateComponent component = null;
+            if (reserved == 'd') {
+                component = trivialComponents.get('0');
+                for (int i = 1; i <= 9; i++) {
+                    component = or(component, trivialComponents.get((char) (i + 48)));
+                }
+            } else if (reserved == 'w') {
+                component = trivialComponents.get('a');
+                for (int i = 98; i <= 122; i++) {
+                    component = or(component, trivialComponents.get((char) i));
+                }
+            } else if (reserved == 'W') {
+                component = trivialComponents.get('A');
+                for (int i = 66; i <= 90; i++) {
+                    component = or(component, trivialComponents.get((char) i));
+                }
+            }
+            return currentComponent != null ? concat(currentComponent, component) : component;
         } else if (ch == '*') {
             return closure(currentComponent);
         }
@@ -70,8 +88,10 @@ public class NFA {
     }
 
     private static Map<Character, StateComponent> getTrivialComponents(String regexp) {
-        return regexp.chars().boxed()
-                .map(c -> (char) c.intValue())
+        return IntStream.concat(IntStream.rangeClosed(65, 90),
+                IntStream.concat(IntStream.rangeClosed(97, 122),
+                        IntStream.rangeClosed(48, 57)))
+                .mapToObj(c -> (char) c)
                 .distinct()
                 .filter(c -> !reservedChars.contains(c))
                 .collect(Collectors.toMap(c -> c, NFA::create));
@@ -81,12 +101,12 @@ public class NFA {
     private static StateComponent create(char ch) {
         State head = State.create();
         State tail = State.create();
-        head.getRidges().add(Ridge.ridge(head, tail, ch));
+        head.addRidge(tail, ch);
         return StateComponent.create(head, tail);
     }
 
     private static StateComponent concat(StateComponent first, StateComponent second) {
-        first.getTail().getRidges().add(Ridge.empty(first.getTail(), second.getHead()));
+        first.getTail().addEmptyRidge(second.getHead());
         return StateComponent.create(first.getHead(), second.getTail());
     }
 
@@ -115,7 +135,7 @@ public class NFA {
         return StateComponent.create(head, tail);
     }
 
-    private static Set<Ridge> getRidges(StateComponent component) {
+    public static Set<Ridge> getRidges(StateComponent component) {
         return getStates(component).stream()
                 .flatMap(s -> s.getRidges().stream())
                 .collect(Collectors.toSet());
@@ -138,6 +158,7 @@ public class NFA {
     }
 
     public static void toNonEpsilonNfa(StateComponent component) {
+        addDirectRidges(component);
         addDirectRidges(component);
         addTerminalStates(component);
         addTransitiveRidges(component);
