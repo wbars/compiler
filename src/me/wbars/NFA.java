@@ -19,6 +19,7 @@ public class NFA {
         reservedChars.add(')');
         reservedChars.add('*');
         reservedChars.add('|');
+        reservedChars.add('+');
         reservedChars.add('\\');
     }
 
@@ -43,26 +44,30 @@ public class NFA {
             char reserved = iterator.next();
             StateComponent component = null;
             if (reserved == 'd') {
-                component = trivialComponents.get('0');
-                for (int i = 1; i <= 9; i++) {
-                    component = or(component, trivialComponents.get((char) (i + 48)));
-                }
+                component = anyFromRange(IntStream.rangeClosed(48, 57), trivialComponents);
             } else if (reserved == 'w') {
-                component = trivialComponents.get('a');
-                for (int i = 98; i <= 122; i++) {
-                    component = or(component, trivialComponents.get((char) i));
-                }
+                component = anyFromRange(IntStream.rangeClosed(97, 122), trivialComponents);
             } else if (reserved == 'W') {
-                component = trivialComponents.get('A');
-                for (int i = 66; i <= 90; i++) {
-                    component = or(component, trivialComponents.get((char) i));
-                }
+                component = anyFromRange(IntStream.rangeClosed(65, 90), trivialComponents);
             }
             return currentComponent != null ? concat(currentComponent, component) : component;
         } else if (ch == '*') {
             return closure(currentComponent);
+        } else if (ch == '+') {
+            return atLeastOnce(currentComponent);
         }
         return null;
+    }
+
+    private static StateComponent anyFromRange(IntStream chars, Map<Character, StateComponent> trivialComponents) {
+        return chars.boxed()
+                .map(c -> trivialComponents.get((char) c.intValue()))
+                .reduce(NFA::or).orElseThrow(RuntimeException::new);
+
+    }
+
+    private static StateComponent atLeastOnce(StateComponent component) {
+        return concat(component, closure(component));
     }
 
     private static StateComponent parse(CharacterIterator iterator, Map<Character, StateComponent> trivialComponents) {
