@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class State {
     private final int id;
-    private final boolean terminal;
+    private boolean terminal;
     private final Set<Ridge> ridges = new HashSet<>();
     private static int counter = 0;
 
@@ -14,12 +14,8 @@ public class State {
         this.terminal = terminal;
     }
 
-    public static State nonTerminal() {
+    public static State create() {
         return new State(counter++, false);
-    }
-
-    public static State terminal() {
-        return new State(counter++, true);
     }
 
     public int getId() {
@@ -30,8 +26,20 @@ public class State {
         return terminal;
     }
 
+    public void setTerminal(boolean terminal) {
+        this.terminal = terminal;
+    }
+
     public Set<Ridge> getRidges() {
         return ridges;
+    }
+
+    public void addEmptyRidge(State to) {
+        ridges.add(Ridge.empty(this, to));
+    }
+
+    public void addRidge(State to, char ch) {
+        ridges.add(Ridge.ridge(this, to, ch));
     }
 
     @Override

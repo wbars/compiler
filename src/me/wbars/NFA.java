@@ -24,6 +24,10 @@ public class NFA {
         return parse(new CharacterIterator(regexp), getTrivialComponents(regexp));
     }
 
+    public static Set<Character> alphabet(String str) {
+        return getTrivialComponents(str).keySet();
+    }
+
     private static StateComponent getNextComponent(Map<Character, StateComponent> trivialComponents,
                                                    CharacterIterator iterator,
                                                    StateComponent currentComponent) {
@@ -46,9 +50,9 @@ public class NFA {
     private static StateComponent parse(CharacterIterator iterator, Map<Character, StateComponent> trivialComponents) {
         StateComponent currentComponent = null;
         while (iterator.hasNext()) {
-
             currentComponent = getNextComponent(trivialComponents, iterator, currentComponent);
         }
+        currentComponent.getTail().setTerminal(true);
         return currentComponent;
     }
 
@@ -75,38 +79,120 @@ public class NFA {
 
 
     private static StateComponent create(char ch) {
-        State head = State.nonTerminal();
-        State tail = State.nonTerminal();
-        head.getRidges().add(Ridge.ridge(tail, ch));
+        State head = State.create();
+        State tail = State.create();
+        head.getRidges().add(Ridge.ridge(head, tail, ch));
         return StateComponent.create(head, tail);
     }
 
     private static StateComponent concat(StateComponent first, StateComponent second) {
-        first.getTail().getRidges().add(Ridge.empty(second.getHead()));
+        first.getTail().getRidges().add(Ridge.empty(first.getTail(), second.getHead()));
         return StateComponent.create(first.getHead(), second.getTail());
     }
 
     private static StateComponent or(StateComponent first, StateComponent second) {
-        State head = State.nonTerminal();
-        State tail = State.nonTerminal();
+        State head = State.create();
+        State tail = State.create();
 
-        head.getRidges().add(Ridge.empty(first.getHead()));
-        head.getRidges().add(Ridge.empty(second.getHead()));
+        head.addEmptyRidge(first.getHead());
+        head.addEmptyRidge(second.getHead());
 
-        first.getTail().getRidges().add(Ridge.empty(tail));
-        second.getTail().getRidges().add(Ridge.empty(tail));
+        first.getTail().addEmptyRidge(tail);
+        second.getTail().addEmptyRidge(tail);
 
         return StateComponent.create(head, tail);
     }
 
     private static StateComponent closure(StateComponent component) {
-        State head = State.nonTerminal();
-        State tail = State.nonTerminal();
+        State head = State.create();
+        State tail = State.create();
 
-        head.getRidges().add(Ridge.empty(component.getHead()));
-        head.getRidges().add(Ridge.empty(tail));
+        head.addEmptyRidge(component.getHead());
+        head.addEmptyRidge(tail);
+        component.getTail().addEmptyRidge(component.getHead());
+        component.getTail().addEmptyRidge(tail);
 
-        component.getTail().getRidges().add(Ridge.empty(component.getHead()));
         return StateComponent.create(head, tail);
+    }
+
+    private static Set<Ridge> getRidges(StateComponent component) {
+        return getStates(component).stream()
+                .flatMap(s -> s.getRidges().stream())
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<State> getStates(StateComponent component) {
+        Set<State> result = new HashSet<>();
+        dfs(component.getHead(), result, new HashSet<>());
+        return result;
+    }
+
+    private static void dfs(State state, Set<State> result, Set<State> visitedStates) {
+        visitedStates.add(state);
+        result.add(state);
+        for (Ridge ridge : state.getRidges()) {
+            if (!visitedStates.contains(ridge.getTo())) {
+                dfs(ridge.getTo(), result, visitedStates);
+            }
+        }
+    }
+
+    public static void toNonEpsilonNfa(StateComponent component) {
+        addDirectRidges(component);
+        addTerminalStates(component);
+        addTransitiveRidges(component);
+        removeEmptyRidges(component);
+
+        System.out.println("Done");
+    }
+
+    private static void removeEmptyRidges(StateComponent component) {
+        for (Ridge ridge : getRidges(component)) {
+            if (ridge.isEmpty()) {
+                ridge.remove();
+            }
+        }
+    }
+
+    private static void addTransitiveRidges(StateComponent component) {
+        Set<State> states = getStates(component);
+        for (State state : states) {
+            Set<Ridge> transitiveRidges = new HashSet<>();
+            for (Ridge ridge : state.getRidges()) {
+                for (Ridge ridge1 : ridge.getTo().getRidges()) {
+                    if (ridge.isEmpty() && !ridge1.isEmpty()) {
+                        transitiveRidges.add(Ridge.ridge(state, ridge1.getTo(), ridge1.getCh()));
+                    }
+                }
+            }
+            transitiveRidges.forEach(r -> state.addRidge(r.getTo(), r.getCh()));
+        }
+    }
+
+    private static void addTerminalStates(StateComponent component) {
+        Set<State> states = getStates(component);
+        for (State state : states) {
+            if (state.isTerminal()) continue;
+            for (Ridge ridge : state.getRidges()) {
+                if (ridge.isEmpty() && ridge.getTo().isTerminal()) {
+                    state.setTerminal(true);
+                }
+            }
+        }
+    }
+
+    private static void addDirectRidges(StateComponent component) {
+        Set<State> states = getStates(component);
+        for (State state : states) {
+            Set<Ridge> directRidges = new HashSet<>();
+            for (Ridge ridge : state.getRidges()) {
+                for (Ridge ridge1 : ridge.getTo().getRidges()) {
+                    if (ridge.isEmpty() && ridge1.isEmpty()) {
+                        directRidges.add(Ridge.empty(state, ridge1.getTo()));
+                    }
+                }
+            }
+            directRidges.forEach(r -> state.addEmptyRidge(r.getTo()));
+        }
     }
 }

@@ -3,20 +3,22 @@ package me.wbars.scanner.models;
 public class Ridge {
     private final boolean empty;
     private final char ch;
-    private final State state;
+    private final State to;
+    private final State from;
 
-    private Ridge(State state, char ch, boolean empty) {
-        this.state = state;
+    private Ridge(State from, State to, char ch, boolean empty) {
+        this.from = from;
+        this.to = to;
         this.ch = ch;
         this.empty = empty;
     }
 
-    public static Ridge empty(State state) {
-        return new Ridge(state, ' ', true);
+    public static Ridge empty(State from, State to) {
+        return new Ridge(from, to, ' ', true);
     }
 
-    public static Ridge ridge(State state, char ch) {
-        return new Ridge(state, ch, false);
+    public static Ridge ridge(State from, State to, char ch) {
+        return new Ridge(from, to, ch, false);
     }
 
     public boolean isEmpty() {
@@ -27,8 +29,8 @@ public class Ridge {
         return ch;
     }
 
-    public State getState() {
-        return state;
+    public State getTo() {
+        return to;
     }
 
     @Override
@@ -38,16 +40,22 @@ public class Ridge {
 
         Ridge ridge = (Ridge) o;
 
-        if (empty != ridge.empty) return false;
-        if (ch != ridge.ch) return false;
-        return state.equals(ridge.state);
+        if (!to.equals(ridge.to)) return false;
+        return from.equals(ridge.from);
     }
 
     @Override
     public int hashCode() {
-        int result = (empty ? 1 : 0);
-        result = 31 * result + (int) ch;
-        result = 31 * result + state.hashCode();
+        int result = to.hashCode();
+        result = 31 * result + from.hashCode();
         return result;
+    }
+
+    public State getFrom() {
+        return from;
+    }
+
+    public void remove() {
+        from.getRidges().remove(this);
     }
 }
