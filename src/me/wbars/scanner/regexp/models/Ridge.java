@@ -1,4 +1,4 @@
-package me.wbars.scanner.models;
+package me.wbars.scanner.regexp.models;
 
 public class Ridge {
     private final boolean empty;

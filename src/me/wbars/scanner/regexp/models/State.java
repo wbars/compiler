@@ -1,4 +1,4 @@
-package me.wbars.scanner.models;
+package me.wbars.scanner.regexp.models;
 
 import java.util.HashSet;
 import java.util.Set;

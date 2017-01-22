@@ -1,9 +1,27 @@
-package me.wbars.scanner.models;
+package me.wbars.scanner.regexp.models;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 public class DfaNode {
+    private Set<DfaNode> nodes;
+    private static final Set<DfaNode> allNodes = new HashSet<>();
+    private static int counter = 0;
+    private final int id;
+
+    public static DfaNode create(Set<State> states) {
+
+        Optional<DfaNode> existingNode = allNodes.stream()
+                .filter(n -> n.getStates().equals(states))
+                .findAny();
+        if (existingNode.isPresent()) return existingNode.get();
+
+        DfaNode node = new DfaNode(states);
+        allNodes.add(node);
+        return node;
+    }
+
     public Set<State> getStates() {
         return states;
     }
@@ -14,6 +32,10 @@ public class DfaNode {
 
     public boolean isTerminal() {
         return states.stream().anyMatch(State::isTerminal);
+    }
+
+    public int getId() {
+        return id;
     }
 
     public static class Edge {
@@ -51,15 +73,13 @@ public class DfaNode {
             return result;
         }
     }
+
     private final Set<State> states;
     private final Set<Edge> edges = new HashSet<>();
 
-    public DfaNode(Set<State> states) {
+    private DfaNode(Set<State> states) {
         this.states = states;
-    }
-
-    public static int computeHashCode(Set<State> states) {
-        return new DfaNode(states).hashCode();
+        this.id = counter++;
     }
 
     @Override

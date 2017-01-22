@@ -1,26 +1,37 @@
-package me.wbars;
+package me.wbars.scanner.regexp;
 
-import me.wbars.scanner.models.CharacterIterator;
-import me.wbars.scanner.models.Ridge;
-import me.wbars.scanner.models.State;
-import me.wbars.scanner.models.StateComponent;
+import me.wbars.scanner.regexp.models.CharacterIterator;
+import me.wbars.scanner.regexp.models.Ridge;
+import me.wbars.scanner.regexp.models.State;
+import me.wbars.scanner.regexp.models.StateComponent;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.stream.IntStream.rangeClosed;
+
 public class NFA {
-    @FunctionalInterface
+    public static Set<Character> alphabet() {
+        return trivialComponents.keySet();
+    }
+
+    public static Set<State> getTerminalStates(StateComponent component) {
+        return getStates(component).stream()
+                .filter(State::isTerminal)
+                .collect(Collectors.toSet());
+    }
+
     private interface ComponentMapper {
         StateComponent apply(CharacterIterator iterator, StateComponent currentComponent);
+
+        char getMeta();
     }
 
     private static final Set<Character> reservedChars = new HashSet<>();
     public static final Map<Character, StateComponent> trivialComponents;
-    private static final Map<Character, ComponentMapper> reservedMappers;
+    private static final List<ComponentMapper> reservedMappers;
+    private static final Map<Character, String> macros;
 
     static {
         reservedChars.add('(');
@@ -30,56 +41,109 @@ public class NFA {
         reservedChars.add('+');
         reservedChars.add('\\');
 
-        trivialComponents = IntStream.concat(IntStream.rangeClosed(65, 90),
-                IntStream.concat(IntStream.rangeClosed(97, 122),
-                        IntStream.rangeClosed(48, 57)))
+        trivialComponents = getVisibleAsciiSymbols()
                 .mapToObj(c -> (char) c)
-                .distinct()
-                .filter(c -> !reservedChars.contains(c))
                 .collect(Collectors.toMap(c -> c, NFA::create));
 
-        reservedMappers = new HashMap<>();
-        reservedMappers.put('(', (iterator, currentComponent) -> {
-            StateComponent component = extractComponentFromParanthesis(iterator);
-            return currentComponent != null ? concat(currentComponent, component) : component;
+        macros = new HashMap<>();
+        macros.put('d', "0|1|2|3|4|5|6|7|8|9");
+        macros.put('w', "a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|_");
+        macros.put('.', "\\w|\\d|\\s|!|\"|#|$|%|&|\\(|\\)|\\*|\\+|,|\\-|.|/|:|;|<|=|>|?|@|[|\\|]|^|_|`|{|\\|}|~");
+        macros.put('s', " ");
+
+        reservedMappers = new ArrayList<>();
+        reservedMappers.add(new ComponentMapper() {
+            @Override
+            public StateComponent apply(CharacterIterator iterator, StateComponent currentComponent) {
+                char reserved = iterator.next();
+                StateComponent component = macros.containsKey(reserved) ? parse(macros.get(reserved)) : create(reserved);
+                return currentComponent != null ? concat(currentComponent, component) : component;
+            }
+
+            @Override
+            public char getMeta() {
+                return '\\';
+            }
         });
-        reservedMappers.put('|', (iterator, currentComponent) -> {
-            StateComponent component = parse(iterator);
-            return currentComponent != null ? or(currentComponent, component) : component;
+
+        reservedMappers.add(new ComponentMapper() {
+            @Override
+            public StateComponent apply(CharacterIterator iterator, StateComponent currentComponent) {
+                StateComponent component = extractComponentFromParanthesis(iterator);
+                return currentComponent != null ? concat(currentComponent, component) : component;
+            }
+
+            @Override
+            public char getMeta() {
+                return '(';
+            }
         });
-        reservedMappers.put('\\', (iterator, currentComponent) -> {
-            char reserved = iterator.next();
-            StateComponent component = anyFromRange(getCharRange(reserved));
-            return currentComponent != null ? concat(currentComponent, component) : component;
+
+        reservedMappers.add(new ComponentMapper() {
+            @Override
+            public StateComponent apply(CharacterIterator iterator, StateComponent currentComponent) {
+                return closure(currentComponent);
+            }
+
+            @Override
+            public char getMeta() {
+                return '*';
+            }
         });
-        reservedMappers.put('*', (iterator, currentComponent) -> closure(currentComponent));
-        reservedMappers.put('+', (iterator, currentComponent) -> atLeastOnce(currentComponent));
+
+        reservedMappers.add(new ComponentMapper() {
+            @Override
+            public StateComponent apply(CharacterIterator iterator, StateComponent currentComponent) {
+                return atLeastOnce(currentComponent);
+            }
+
+            @Override
+            public char getMeta() {
+                return '+';
+            }
+        });
+
+        reservedMappers.add(new ComponentMapper() {
+            @Override
+            public StateComponent apply(CharacterIterator iterator, StateComponent currentComponent) {
+                StateComponent component = parse(iterator);
+                return currentComponent != null ? or(currentComponent, component) : component;
+            }
+
+            @Override
+            public char getMeta() {
+                return '|';
+            }
+        });
     }
 
-    private static IntStream getCharRange(char macro) {
-        if (macro == 'd') return IntStream.rangeClosed(48, 57);
-        if (macro == 'w') return IntStream.rangeClosed(97, 122);
-        if (macro == 'W') return IntStream.rangeClosed(65, 90);
-        return null;
+    private static IntStream getVisibleAsciiSymbols() {
+        return rangeClosed(32, 126);
+    }
+
+    private static String orAllChars() {
+        return trivialComponents.keySet().stream().map(String::valueOf).reduce((c, c2) -> c + "|" + c2).orElse("");
     }
 
     public static StateComponent parse(String regexp) {
         return parse(new CharacterIterator(regexp));
     }
 
+    public static StateComponent parseWithoutEpsilon(String regexp) {
+        StateComponent component = parse(new CharacterIterator(regexp));
+        toNonEpsilonNfa(component);
+        return component;
+    }
+
     private static StateComponent getNextComponent(CharacterIterator iterator, StateComponent currentComponent) {
         char ch = iterator.next();
         if (!reservedChars.contains(ch)) {
-            return currentComponent != null ? concat(currentComponent, trivialComponents.get(ch)) : trivialComponents.get(ch);
+            return currentComponent != null ? concat(currentComponent, create(ch)) : create(ch);
         }
-        if (!reservedMappers.containsKey(ch)) throw new RuntimeException();
-        return reservedMappers.get(ch).apply(iterator, currentComponent);
-    }
-
-    private static StateComponent anyFromRange(IntStream chars) {
-        return chars.boxed()
-                .map(c -> trivialComponents.get((char) c.intValue()))
-                .reduce(NFA::or).orElseThrow(RuntimeException::new);
+        return reservedMappers.stream()
+                .filter(m -> m.getMeta() == ch)
+                .findFirst().orElseThrow(RuntimeException::new)
+                .apply(iterator, currentComponent);
     }
 
     private static StateComponent atLeastOnce(StateComponent component) {
@@ -121,7 +185,7 @@ public class NFA {
         return StateComponent.create(first.getHead(), second.getTail());
     }
 
-    private static StateComponent or(StateComponent first, StateComponent second) {
+    public static StateComponent or(StateComponent first, StateComponent second) {
         State head = State.create();
         State tail = State.create();
 
@@ -152,7 +216,7 @@ public class NFA {
                 .collect(Collectors.toSet());
     }
 
-    private static Set<State> getStates(StateComponent component) {
+    public static Set<State> getStates(StateComponent component) {
         Set<State> result = new HashSet<>();
         dfs(component.getHead(), result, new HashSet<>());
         return result;

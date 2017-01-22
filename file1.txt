@@ -1,0 +1,40 @@
+program binary_search;
+
+uses
+  crt;
+type
+  index=1..100;
+var
+  arr:array[1..100] of index;
+var
+  mid,ilow,ihigh,search:integer;
+  i,n,fi:index;
+  found:boolean;
+begin
+  clrscr;
+  writeln('Binary search');
+  writeln('array length:');
+  readln(n);
+  writeln('Enter ',n,' numbers: ');
+  for i:=1 to n do begin
+    readln(arr[i]);
+  end;
+  writeln('what number     do you want to search?');
+  readln(search);
+  ilow  :=1;
+  ihigh :=n;
+  found :=false;
+  repeat
+    mid := (ilow+ihigh) div 2;
+    if search=arr[mid] then begin
+      found := true;
+      fi := mid;
+      break;
+    end
+    else if search<arr[mid] then ihigh := mid-1
+    else ilow := mid+1;
+  until ihigh < ilow;
+  if found then writeln('Element found, Index = ', fi)
+  else writeln('Element NOT found');
+  readkey();
+end.
