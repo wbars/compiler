@@ -161,53 +161,48 @@ public class NFA {
     private static void dfs(State state, Set<State> result, Set<State> visitedStates) {
         visitedStates.add(state);
         result.add(state);
-        for (Ridge ridge : state.getRidges()) {
-            if (!visitedStates.contains(ridge.getTo())) {
-                dfs(ridge.getTo(), result, visitedStates);
-            }
-        }
+        state.getRidges().stream()
+                .filter(r -> !visitedStates.contains(r.getTo()))
+                .forEach(r -> dfs(r.getTo(), result, visitedStates));
     }
 
     public static void toNonEpsilonNfa(StateComponent component) {
         addDirectRidges(component);
         addTerminalStates(component);
-        addTransitiveRidges(component);
+        getTransitiveRidges(component);
         removeEmptyRidges(component);
     }
 
     private static void removeEmptyRidges(StateComponent component) {
-        for (Ridge ridge : getRidges(component)) {
-            if (ridge.isEmpty()) {
-                ridge.remove();
-            }
-        }
+        getRidges(component).stream()
+                .filter(Ridge::isEmpty)
+                .forEach(Ridge::remove);
     }
 
-    private static void addTransitiveRidges(StateComponent component) {
-        Set<State> states = getStates(component);
-        for (State state : states) {
-            Set<Ridge> transitiveRidges = new HashSet<>();
-            for (Ridge ridge : state.getRidges()) {
-                for (Ridge ridge1 : ridge.getTo().getRidges()) {
-                    if (ridge.isEmpty() && !ridge1.isEmpty()) {
-                        transitiveRidges.add(Ridge.ridge(state, ridge1.getTo(), ridge1.getCh()));
-                    }
-                }
-            }
-            transitiveRidges.forEach(r -> state.addRidge(r.getTo(), r.getCh()));
-        }
+    private static void getTransitiveRidges(StateComponent component) {
+        getStates(component).forEach(state -> getTransitiveRidges(state)
+                .forEach(transitiveRidge -> state.addRidge(transitiveRidge.getTo(), transitiveRidge.getCh()))
+        );
+    }
+
+    private static Set<Ridge> getTransitiveRidges(State state) {
+        return state.getRidges().stream()
+                .filter(Ridge::isEmpty)
+                .flatMap(firstRidge -> firstRidge.getTo().getRidges().stream())
+                .filter(secondRidge -> !secondRidge.isEmpty())
+                .map(secondRidge -> Ridge.ridge(state, secondRidge.getTo(), secondRidge.getCh()))
+                .collect(Collectors.toSet());
     }
 
     private static void addTerminalStates(StateComponent component) {
-        Set<State> states = getStates(component);
-        for (State state : states) {
-            if (state.isTerminal()) continue;
-            for (Ridge ridge : state.getRidges()) {
-                if (ridge.isEmpty() && ridge.getTo().isTerminal()) {
-                    state.setTerminal(true);
-                }
-            }
-        }
+        getStates(component).stream()
+                .filter(s -> !s.isTerminal() && existsEmptyRidgeToTerminal(s))
+                .forEach(s -> s.setTerminal(true));
+    }
+
+    private static boolean existsEmptyRidgeToTerminal(State state) {
+        return state.getRidges().stream()
+                .anyMatch(r -> r.isEmpty() && r.getTo().isTerminal());
     }
 
     private static void addDirectRidges(StateComponent component) {
