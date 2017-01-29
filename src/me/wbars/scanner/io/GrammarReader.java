@@ -20,7 +20,7 @@ public abstract class GrammarReader {
     private Map<PartOfSpeech, StateComponent> nfaGrammars() {
         return stream(getGrammarContent().split("\n"))
                 .filter(s -> !s.isEmpty() && !s.startsWith("#"))
-                .map(s -> s.split(":="))
+                .map(s -> s.split(" "))
                 .collect(Collectors.toMap(
                         s -> PartOfSpeech.getOrCreate(s[0].trim()),
                         s -> NFA.parseWithoutEpsilon(s[1].trim()))

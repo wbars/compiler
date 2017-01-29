@@ -1,5 +1,7 @@
 package me.wbars;
 
+import me.wbars.parser.Parser;
+import me.wbars.parser.models.Node;
 import me.wbars.scanner.Scanner;
 import me.wbars.scanner.io.FileGrammarReader;
 import me.wbars.scanner.io.GrammarReader;
@@ -20,7 +22,8 @@ public class Main {
         ScannerFilePersister.writeToFile(table, "table");
         TransitionTable table1 = ScannerFilePersister.fromFile("table");
         List<Token> scan = Scanner.scan(getFileContents("file1.txt"), table1);
-        scan.forEach(System.out::println);
+        Node parse = Parser.parse(scan);
+        System.out.println("Done");
     }
 
     private static String getFileContents(String path) throws IOException {
