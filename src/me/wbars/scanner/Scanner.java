@@ -32,7 +32,7 @@ public class Scanner {
             while (state != -1 && i < content.length()) {
                 char nextChar = content.charAt(i);
                 lexeme += nextChar;
-                if (state > 0) states.clear();
+                if (state > 0 && transitionTable.getPos(state) != null) states.clear();
                 states.push(state);
                 state = transitionTable.getTransitions().get(state).getOrDefault(nextChar, -1);
                 i++;

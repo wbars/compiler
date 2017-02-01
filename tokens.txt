@@ -57,6 +57,7 @@ RELOP =|!=|>|<|>=|<=
 
 IDENTIFIER (\w)((\w|\d)+)
 UNSIGNED_INTEGER \d+
+REALNUMBER (\d+).(\d+)
 SIGN \+|\-|\*|\/
 STRING_VAR '((\.)+)'
 COLON :
