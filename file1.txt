@@ -1,7 +1,20 @@
-program gauss;
+program gauss(a,b,c);
+
+label 1,2,3;
 
 const
-  e = 0.000001;
+  e = 0.000001; pi = 3 + 0.14;
+
+type
+
+       Arrayfoo = array [0 .. 9] of Integer;
+
+       SchemaFoo = array [x .. y] of Integer;
+       CharSetFoo          = set of Char;
+       SubrangeFoo         = 123..456;
+       EnumeratedFoo       = (Pope,John,the,Second);
+       PInteger            = ^arrayfoo;
+       IdentityFoo         = Integer;
 
 var
   a,a1: array[1..10, 1..10] of real;
@@ -9,22 +22,26 @@ var
   x: array[1..10] of real;
   n, i, j, k: integer;z, r, g: real;
 
+procedure DrawLine;
+begin
+	PythagorasFunc := SQRT(A*A + B*B);
+end;
+procedure EnterUserInfo(TxtCol : SmallInt; TxtBck : SmallInt);
+begin
+	PythagorasFunc := SQRT(A*A + B*B);
+end;
+function PythagorasFunc(A: Real; B: Real) : Real;
+begin
+	PythagorasFunc := SQRT(A*A + B*B);
+end;
+
 begin
   clrscr;
   write('Order: ');
   readln(n);
   writeln('Input coeff');
   for i := 1 to n do
-  begin
-    for j := 1 to n do
-    begin
-      write('a[', i, ',', j, ']=');
-      readln(a[i, j]);
-      a1[i,j]:=a[i,j];
-    end;
-    Writeln('b[', i, ']= ');
-    readln(b[i]);
-  end;
+  a := 1;
   for k := 1 to n do
   begin
     for j := k + 1 to n do
@@ -49,7 +66,9 @@ begin
   end;
   writeln('roots');
   for i := 1 to n do
+  begin
     write('x[', i, ']=', x[i]:0:2, '   ');
+    end;
   writeln;
   writeln('Check');
 

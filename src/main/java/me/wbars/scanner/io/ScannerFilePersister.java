@@ -12,12 +12,16 @@ import java.util.stream.Collectors;
 
 public class ScannerFilePersister {
     public static void writeToFile(TransitionTable table, String path) throws IOException {
+
+        Files.write(Paths.get(path), getLines(table), Charset.forName("UTF-8"));
+    }
+
+    public static List<String> getLines(TransitionTable table) {
         List<String> lines = new ArrayList<>();
 
         lines.addAll(getTransitionTable(table.getTransitions()));
         lines.addAll(getPosTable(table.getPosMap()));
-
-        Files.write(Paths.get(path), lines, Charset.forName("UTF-8"));
+        return lines;
     }
 
     private static String commaConcat(String s1, String s2) {

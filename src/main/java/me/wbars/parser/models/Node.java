@@ -4,6 +4,7 @@ import me.wbars.scanner.models.Token;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class Node {
     private final String name;
@@ -49,5 +50,49 @@ public class Node {
 
     public void addChildren(Node node) {
         if (node != null) children.add(node);
+    }
+
+    public Node child(int index) {
+        return children.get(index);
+    }
+
+    public Node head() {
+        return child(0);
+    }
+
+    public int size() {
+        return children.size();
+    }
+
+    public Node last() {
+        return children.get(children.size() - 1);
+    }
+
+    public Node fromEnd(int i) {
+        return children.get(children.size() - 1 - i);
+    }
+
+    public Node firstNonToken(String partOfSpeech) {
+        return children.stream()
+                .filter(r -> r.getTerminal() == null || !r.getTerminal().getPos().name.equals(partOfSpeech))
+                .findFirst().orElse(null);
+    }
+
+    public void removeLastChild() {
+        children.remove(children.size() - 1);
+    }
+
+    public Optional<Node> firstChildWithName(String name) {
+        return children.stream().filter(node -> node.getName().equals(name)).findFirst();
+    }
+
+    public boolean isEmpty() {
+        return children.isEmpty();
+    }
+
+    public Node firstNullToken() {
+        return children.stream()
+                .filter(r -> r.getTerminal() == null)
+                .findFirst().orElse(null);
     }
 }

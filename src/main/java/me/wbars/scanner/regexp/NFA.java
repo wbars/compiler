@@ -29,7 +29,7 @@ public class NFA {
     }
 
     private static final Set<Character> reservedChars = new HashSet<>();
-    public static final Map<Character, StateComponent> trivialComponents;
+    private static final Map<Character, StateComponent> trivialComponents;
     private static final List<ComponentMapper> reservedMappers;
     private static final Map<Character, String> macros;
 
@@ -182,6 +182,7 @@ public class NFA {
 
     private static StateComponent concat(StateComponent first, StateComponent second) {
         first.getTail().addEmptyRidge(second.getHead());
+        getStates(first).forEach(state -> state.setTerminal(false));
         return StateComponent.create(first.getHead(), second.getTail());
     }
 

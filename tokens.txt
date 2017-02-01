@@ -54,6 +54,7 @@ DIRECTIVE FORWARD|EXTERNAL|forward|external
 DIRECTION TO|DOWNTO|to|downto
 ASSIGNMENT :=
 RELOP =|!=|>|<|>=|<=
+UPARROW ^
 
 IDENTIFIER (\w)((\w|\d)+)
 UNSIGNED_INTEGER \d+
