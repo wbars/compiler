@@ -56,7 +56,7 @@ ASSIGNMENT :=
 RELOP =|!=|>|<|>=|<=
 UPARROW ^
 
-IDENTIFIER (\w)((\w|\d)+)
+IDENTIFIER (\w)((\w|\d)*)
 UNSIGNED_INTEGER \d+
 REALNUMBER (\d+).(\d+)
 SIGN \+|\-|\*|\/
