@@ -1,13 +1,20 @@
 package me.wbars.semantic.models.types;
 
-public class EnumType {
-    private final String[] variants;
+import java.util.List;
 
-    EnumType(String[] variants) {
+public class EnumType implements Type {
+    private final List<String> variants;
+
+    EnumType(List<String> variants) {
         this.variants = variants;
     }
 
-    public String[] getVariants() {
+    public List<String> getVariants() {
         return variants;
+    }
+
+    @Override
+    public String name() {
+        return "Enum";
     }
 }

@@ -1,5 +1,8 @@
 package me.wbars.semantic.models;
 
+import me.wbars.semantic.models.types.Type;
+import me.wbars.semantic.models.types.TypeRegistry;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,5 +39,10 @@ public class BlockNode extends ASTNode {
 
     public List<ASTNode> getStatements() {
         return statements;
+    }
+
+    @Override
+    protected Type getType(TypeRegistry typeRegistry) {
+        return typeRegistry.processType(this);
     }
 }

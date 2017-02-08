@@ -161,20 +161,11 @@ public class Parser {
             addParensDerivate(factor, this.simpleExpr);
             return factor;
         }
-        if (isCurrentTokenHasPos(Tokens.UNSIGNED_INTEGER)) {
-            factor.addChildren(tokenByType(Tokens.UNSIGNED_INTEGER));
-            return factor;
-        }
 
-        if (isCurrentTokenHasPos(Tokens.SIGNED_INTEGER)) {
-            factor.addChildren(tokenByType(Tokens.SIGNED_INTEGER));
-            return factor;
-        }
+        if (tryAddToken(factor, Tokens.UNSIGNED_INTEGER)) return factor;
+        if (tryAddToken(factor, Tokens.SIGNED_INTEGER)) return factor;
+        if (tryAddToken(factor, Tokens.REALNUMBER)) return factor;
 
-        if (isCurrentTokenHasPos(Tokens.REALNUMBER)) {
-            factor.addChildren(tokenByType(Tokens.REALNUMBER));
-            return factor;
-        }
         if (isCurrentTokenHasPos(Tokens.IDENTIFIER)) {
             factor.addChildren(derivate(this::varAccess));
             if (isCurrentTokenHasPos(Tokens.OPEN_PAREN)) {
@@ -184,12 +175,21 @@ public class Parser {
             }
             return factor;
         }
-        if (isCurrentTokenHasPos(Tokens.STRING_VAR)) {
-            factor.addChildren(tokenByType(Tokens.STRING_VAR));
-            return factor;
-        }
+        if (tryAddToken(factor, Tokens.STRING_VAR)) return factor;
         throwParseException(Tokens.OPEN_PAREN, Tokens.UNSIGNED_INTEGER, Tokens.IDENTIFIER, Tokens.STRING_VAR);
         return null;
+    }
+
+    private boolean tryAddNode(Node node, Supplier<Node> nodeToAddSupplier, String partOfSpeech) {
+        if (isCurrentTokenHasPos(partOfSpeech)) {
+            node.addChildren(derivate(nodeToAddSupplier));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean tryAddToken(Node node, String partOfSpeech) {
+        return tryAddNode(node, () -> tokenByType(partOfSpeech), partOfSpeech);
     }
 
     private void addParensDerivate(Node node, Supplier<Node> supplier) {
@@ -257,25 +257,15 @@ public class Parser {
             stmt.addChildren(tokenByType(Tokens.UNSIGNED_INTEGER));
             stmt.addChildren(tokenByType(Tokens.COLON));
         }
-        if (isCurrentTokenHasPos(Tokens.REPEAT)) {
-            stmt.addChildren(derivate(this::repeatStmt));
-            return stmt;
-        }
-        if (isCurrentTokenHasPos(Tokens.WHILE)) {
-            stmt.addChildren(derivate(this::whileStmt));
-            return stmt;
-        }
-        if (isCurrentTokenHasPos(Tokens.FOR)) {
-            stmt.addChildren(derivate(this::fortStmt));
-            return stmt;
-        }
-        if (isCurrentTokenHasPos(Tokens.IF)) {
-            stmt.addChildren(derivate(this::ifStmt));
-            return stmt;
-        }
+        if (tryAddNode(stmt, this::repeatStmt, Tokens.REPEAT)) return stmt;
+        if (tryAddNode(stmt, this::whileStmt, Tokens.WHILE)) return stmt;
+        if (tryAddNode(stmt, this::fortStmt, Tokens.FOR)) return stmt;
+        if (tryAddNode(stmt, this::ifStmt, Tokens.IF)) return stmt;
+
 
         if (isCurrentTokenHasPos(Tokens.IDENTIFIER)) {
-            if (tokenHasPos(tokens.lookahead(), Tokens.SEMICOLON) || tokenHasPos(tokens.lookahead(), Tokens.OPEN_PAREN)) {
+            if (tokenHasPos(tokens.lookahead(), Tokens.SEMICOLON)
+                    || tokenHasPos(tokens.lookahead(), Tokens.OPEN_PAREN)) {
                 stmt.addChildren(derivate(this::procedureStmt));
             } else {
                 stmt.addChildren(derivate(this::assignmentStmt));
@@ -303,13 +293,9 @@ public class Parser {
     }
 
     private Node varAccess1() {
-        if (isCurrentTokenHasPos(Tokens.OPEN_BRACKET)) {
-            return varByIndex();
-        } else if (isCurrentTokenHasPos(Tokens.DOT)) {
-            return varByField();
-        } else if (isCurrentTokenHasPos(Tokens.UPARROW)) {
-            return varByPointer();
-        }
+        if (isCurrentTokenHasPos(Tokens.OPEN_BRACKET)) return varByIndex();
+        if (isCurrentTokenHasPos(Tokens.DOT)) return varByField();
+        if (isCurrentTokenHasPos(Tokens.UPARROW)) return varByPointer();
         return null;
     }
 
@@ -348,13 +334,11 @@ public class Parser {
     private Node actualParam() {
         Node actualParam = Node.empty("actualParam");
         actualParam.addChildren(derivate(this::expr));
-        if (!isCurrentTokenHasPos(Tokens.COLON)) return actualParam;
 
-        actualParam.addChildren(tokenByType(Tokens.COLON));
+        if (!tryAddToken(actualParam, Tokens.COLON)) return actualParam;
         actualParam.addChildren(derivate(this::expr));
-        if (!isCurrentTokenHasPos(Tokens.COLON)) return actualParam;
 
-        actualParam.addChildren(tokenByType(Tokens.COLON));
+        if (!tryAddToken(actualParam, Tokens.COLON)) return actualParam;
         actualParam.addChildren(derivate(this::expr));
         return actualParam;
     }
@@ -365,9 +349,8 @@ public class Parser {
         stmt.addChildren(derivate(this::booleanExpr));
         stmt.addChildren(tokenByType(Tokens.THEN));
         stmt.addChildren(derivate(this::stmt));
-        if (!isCurrentTokenHasPos(Tokens.ELSE)) return stmt;
+        if (!tryAddToken(stmt, Tokens.ELSE)) return stmt;
 
-        stmt.addChildren(tokenByType(Tokens.ELSE));
         stmt.addChildren(derivate(this::stmt));
         return stmt;
     }
@@ -476,12 +459,10 @@ public class Parser {
         procedureDeclaration.addChildren(derivate(this::procedureHeading));
         procedureDeclaration.addChildren(tokenByType(Tokens.SEMICOLON));
 
-        if (isCurrentTokenHasPos(Tokens.DIRECTIVE)) {
-            procedureDeclaration.addChildren(tokenByType(Tokens.DIRECTIVE));
-        } else {
-            procedureDeclaration.addChildren(derivate(this::block));
-            procedureDeclaration.addChildren(tokenByType(Tokens.SEMICOLON));
-        }
+        tryAddToken(procedureDeclaration, Tokens.DIRECTIVE);
+
+        procedureDeclaration.addChildren(derivate(this::block));
+        procedureDeclaration.addChildren(tokenByType(Tokens.SEMICOLON));
         return procedureDeclaration;
     }
 
@@ -502,19 +483,14 @@ public class Parser {
     }
 
     private Node formalParameterSection() {
-        Node formalParameterSection = Node.empty("formalParameterSection");
-        if (isCurrentTokenHasPos(Tokens.IDENTIFIER)) {
-            formalParameterSection.addChildren(derivate(this::valueParameterSpec));
-        } else if (isCurrentTokenHasPos(Tokens.VAR)) {
-            formalParameterSection.addChildren(derivate(this::variableParameterSpec));
-        } else if (isCurrentTokenHasPos(Tokens.PROCEDURE)) {
-            formalParameterSection.addChildren(derivate(this::proceduralParameterSpec));
-        } else if (isCurrentTokenHasPos(Tokens.FUNCTION)) {
-            formalParameterSection.addChildren(derivate(this::functionalParameterSpec));
-        } else {
-            throwParseException(Tokens.IDENTIFIER, Tokens.VAR, Tokens.PROCEDURE, Tokens.FUNCTION);
-        }
-        return formalParameterSection;
+        Node param = Node.empty("formalParameterSection");
+        if (tryAddNode(param, this::valueParameterSpec, Tokens.IDENTIFIER)) return param;
+        if (tryAddNode(param, this::variableParameterSpec, Tokens.VAR)) return param;
+        if (tryAddNode(param, this::proceduralParameterSpec, Tokens.PROCEDURE)) return param;
+        if (tryAddNode(param, this::functionalParameterSpec, Tokens.FUNCTION)) return param;
+
+        throwParseException(Tokens.IDENTIFIER, Tokens.VAR, Tokens.PROCEDURE, Tokens.FUNCTION);
+        return null;
     }
 
     private Node functionalParameterSpec() {
@@ -586,10 +562,9 @@ public class Parser {
     }
 
     private Node typeDeclaration() {
-        if (!isCurrentTokenHasPos(Tokens.TYPE)) return null;
-
         Node typeDeclaration = Node.empty("typeDeclaration");
-        typeDeclaration.addChildren(tokenByType(Tokens.TYPE));
+        if (!tryAddToken(typeDeclaration, Tokens.TYPE)) return null;
+
         typeDeclaration.addChildren(derivate(this::typeDefinitionList));
         return typeDeclaration;
     }
@@ -634,10 +609,8 @@ public class Parser {
         if (tokenHasPos(tokens.lookahead(), Tokens.SEMICOLON)) return tokenByType(Tokens.IDENTIFIER);
 
         Node typeDenoter = Node.empty("newType");
-        if (isCurrentTokenHasPos(Tokens.UPARROW)) {
-            typeDenoter.addChildren(derivate(this::newPointerType));
-            return typeDenoter;
-        }
+        if (tryAddNode(typeDenoter, this::newPointerType, Tokens.UPARROW)) return typeDenoter;
+
         if (isCurrentTokenHasPos(Tokens.OPEN_PAREN)
                 || isCurrentTokenHasPos(Tokens.SIGN)
                 || isCurrentTokenHasPos(Tokens.UNSIGNED_INTEGER)
@@ -646,28 +619,18 @@ public class Parser {
             return typeDenoter;
         }
 
-        if (isCurrentTokenHasPos(Tokens.PACKED)) {
-            typeDenoter.addChildren(tokenByType(Tokens.PACKED));
-        }
-        if (isCurrentTokenHasPos(Tokens.ARRAY)) {
-            typeDenoter.addChildren(derivate(this::arrayType));
-            return typeDenoter;
-        }
+        tryAddToken(typeDenoter, Tokens.PACKED);
+        if (tryAddNode(typeDenoter, this::arrayType, Tokens.ARRAY)) return typeDenoter;
+        if (tryAddNode(typeDenoter, this::recordType, Tokens.RECORD)) return typeDenoter;
 
-        if (isCurrentTokenHasPos(Tokens.RECORD)) {
-            typeDenoter.addChildren(derivate(this::recordType));
-            return typeDenoter;
-        }
 
-        if (isCurrentTokenHasPos(Tokens.SET)) {
-            typeDenoter.addChildren(tokenByType(Tokens.SET));
+        if (tryAddToken(typeDenoter, Tokens.SET)) {
             typeDenoter.addChildren(tokenByType(Tokens.OF));
             typeDenoter.addChildren(derivate(this::typeDenoter));
             return typeDenoter;
         }
 
-        if (isCurrentTokenHasPos(Tokens.PFILE)) {
-            typeDenoter.addChildren(tokenByType(Tokens.PFILE));
+        if (tryAddToken(typeDenoter, Tokens.PFILE)) {
             typeDenoter.addChildren(tokenByType(Tokens.OF));
             typeDenoter.addChildren(derivate(this::typeDenoter));
             return typeDenoter;
@@ -686,8 +649,7 @@ public class Parser {
             return recordType;
         }
         recordType.addChildren(derivate(recordSectionList));
-        if (isCurrentTokenHasPos(Tokens.SEMICOLON)) {
-            recordType.addChildren(tokenByType(Tokens.SEMICOLON));
+        if (tryAddToken(recordType, Tokens.SEMICOLON)) {
             recordType.addChildren(derivate(this::variantPart));
         }
         recordType.addChildren(tokenByType(Tokens.END));
@@ -707,9 +669,7 @@ public class Parser {
         variantPart.addChildren(derivate(this::variantSelector));
         variantPart.addChildren(tokenByType(Tokens.OF));
         variantPart.addChildren(derivate(variantList));
-        if (isCurrentTokenHasPos(Tokens.SEMICOLON)) {
-            variantPart.addChildren(tokenByType(Tokens.SEMICOLON));
-        }
+        tryAddToken(variantPart, Tokens.SEMICOLON);
         return variantPart;
 
     }
@@ -718,13 +678,11 @@ public class Parser {
         Node variant = Node.empty("variant");
         variant.addChildren(derivate(caseConstantList));
         variant.addChildren(tokenByType(Tokens.COLON));
+
         variant.addChildren(tokenByType(Tokens.OPEN_PAREN));
-        if (isCurrentTokenHasPos(Tokens.CASE)) {
-            variant.addChildren(derivate(this::variantPart));
-        } else {
+        if (!tryAddNode(variant, this::variantPart, Tokens.CASE)) {
             variant.addChildren(derivate(recordSectionList));
-            if (isCurrentTokenHasPos(Tokens.SEMICOLON)) {
-                variant.addChildren(tokenByType(Tokens.SEMICOLON));
+            if (tryAddToken(variant, Tokens.SEMICOLON)) {
                 variant.addChildren(derivate(this::variantPart));
             }
         }
@@ -744,8 +702,7 @@ public class Parser {
     private Node caseConstant() {
         Node caseConstant = Node.empty("caseConstant");
         caseConstant.addChildren(derivate(this::constant));
-        if (isCurrentTokenHasPos(Tokens.DOT)) {
-            caseConstant.addChildren(tokenByType(Tokens.DOT));
+        if (tryAddToken(caseConstant, Tokens.DOT)) {
             caseConstant.addChildren(tokenByType(Tokens.DOT));
             caseConstant.addChildren(derivate(this::constant));
         }
@@ -755,8 +712,7 @@ public class Parser {
     private Node variantSelector() {
         Node variantSelector = Node.empty("variantSelector");
         variantSelector.addChildren(tokenByType(Tokens.IDENTIFIER));
-        if (isCurrentTokenHasPos(Tokens.COLON)) {
-            variantSelector.addChildren(tokenByType(Tokens.COLON));
+        if (tryAddToken(variantSelector, Tokens.COLON)) {
             variantSelector.addChildren(tokenByType(Tokens.IDENTIFIER));
         }
         return variantSelector;
@@ -777,28 +733,17 @@ public class Parser {
 
     private Node constant() {
         Node constant = Node.empty("const");
-        if (isCurrentTokenHasPos(Tokens.SIGN)) {
-            constant.addChildren(tokenByType(Tokens.SIGN));
-        }
-        if (isCurrentTokenHasPos(Tokens.UNSIGNED_INTEGER)) {
-            constant.addChildren(tokenByType(Tokens.UNSIGNED_INTEGER));
-            return constant;
-        }
-
-        if (isCurrentTokenHasPos(Tokens.IDENTIFIER)) {
-            constant.addChildren(tokenByType(Tokens.IDENTIFIER));
-            return constant;
-        }
+        tryAddToken(constant, Tokens.SIGN);
+        if (tryAddToken(constant, Tokens.UNSIGNED_INTEGER)) return constant;
+        if (tryAddToken(constant, Tokens.IDENTIFIER)) return constant;
 
         throwParseException(Tokens.SIGN, Tokens.UNSIGNED_INTEGER, Tokens.IDENTIFIER);
         return null;
     }
 
     private Node constDeclaration() {
-        if (!isCurrentTokenHasPos(Tokens.CONST)) return null;
-
         Node constDefinition = Node.empty("constDeclaration");
-        constDefinition.addChildren(tokenByType(Tokens.CONST));
+        if (!tryAddToken(constDefinition, Tokens.CONST)) return null;
         constDefinition.addChildren(derivate(this::constList));
         return constDefinition;
     }

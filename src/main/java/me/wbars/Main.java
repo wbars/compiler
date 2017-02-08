@@ -7,7 +7,8 @@ import me.wbars.scanner.io.ScannerFilePersister;
 import me.wbars.scanner.models.Token;
 import me.wbars.scanner.models.TransitionTable;
 import me.wbars.semantic.AST;
-import me.wbars.semantic.models.ASTNode;
+import me.wbars.semantic.models.ProgramNode;
+import me.wbars.semantic.models.types.TypeRegistry;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,7 +24,9 @@ public class Main {
         TransitionTable table1 = ScannerFilePersister.fromFile("table");
         List<Token> scan = Scanner.scan(getFileContents("file1.txt"), table1);
         Node parse = Parser.parse(scan);
-        ASTNode ast = AST.parseProgram(parse);
+        ProgramNode ast = AST.parseProgram(parse);
+        TypeRegistry typeRegistry = new TypeRegistry();
+        ast.getProcessedType(typeRegistry);
         System.out.println("Done");
     }
 

@@ -4,6 +4,7 @@ import me.wbars.parser.models.Node;
 import me.wbars.parser.models.Tokens;
 import me.wbars.scanner.models.PartOfSpeech;
 import me.wbars.semantic.models.*;
+import me.wbars.semantic.models.types.TypeRegistry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,12 +44,12 @@ public class AST {
         if (expr.size() == 4) {
             return new ProcedureStmtNode(
                     parseLiteral(expr.head()),
-                    collectRightRecursiveCall(expr.child(2), node -> parseActualParam(node.head()))
+                    collectRightRecursiveCall(expr.child(2), node -> parseArgument(node.head()))
             );
         }
         if (expr.size() == 1) {
             if (hasName(expr.head(), "varAccess")) return parseRightAssociativeOp(expr.head());
-            return new LiteralNode(expr.head().getTerminal().getValue());
+            return new LiteralNode(expr.head().getTerminal().getValue(), TypeRegistry.fromToken(expr.head().getTerminal()));
         }
         return parseSimpleExpr(expr.child(1));
     }
@@ -72,7 +73,7 @@ public class AST {
     }
 
     private static LiteralNode parseLiteral(Node node) {
-        return node.isEmpty() ? new LiteralNode(node.getTerminal().getValue()) : parseLiteral(node.head());
+        return node.isEmpty() ? new LiteralNode(node.getTerminal().getValue(), TypeRegistry.fromToken(node.getTerminal())) : parseLiteral(node.head());
     }
 
     private static ASTNode parseVarAccess(Node varAccess) {
@@ -97,15 +98,14 @@ public class AST {
         throw new RuntimeException();
     }
 
-    public static ASTNode parseProgram(Node parse) {
+    public static ProgramNode parseProgram(Node parse) {
         Node heading = parse.head();
         String name = parseVarAccess(heading.child(1)).getValue();
-        ProgramNode programNode = new ProgramNode(name);
+        ProgramNode programNode = new ProgramNode(name, parseBlock(parse.child(2)));
         if (heading.size() > 2) {
             collectRightRecursiveCall(heading.child(3), node -> parseLiteral(node.head()))
                     .forEach(programNode::addIdentifier);
         }
-        programNode.setBlock(parseBlock(parse.child(2)));
         return programNode;
     }
 
@@ -122,7 +122,7 @@ public class AST {
     private static BlockNode parseBlock(Node block) {
         BlockNode blockNode = new BlockNode();
 
-        addPart(block, "labelDeclaration", blockNode.getLabels(), node -> new LiteralNode(parseVarAccess(node.head()).getValue()));
+        addPart(block, "labelDeclaration", blockNode.getLabels(), node -> new LiteralNode(parseVarAccess(node.head()).getValue(), TypeRegistry.STRING));
         addPart(block, "constDeclaration", blockNode.getConstDefinitions(), node -> parseConstDefinition(node.head()));
         addPart(block, "typeDeclaration", blockNode.getTypeDefinitions(), node -> parseTypeDefinition(parseVarAccess(node.head().head()).getValue(), node.head().child(2)));
         addPart(block, "varDeclarationPart", blockNode.getVarDeclarations(), node -> parseVarDeclaration(node.head()));
@@ -148,7 +148,7 @@ public class AST {
             return new ProcedureStmtNode(
                     parseLiteral(head.head()),
                     head.size() > 1 ? collectRightRecursiveCall(
-                            head.child(2), n1 -> parseActualParam(n1.head())) : emptyList()
+                            head.child(2), n1 -> parseArgument(n1.head())) : emptyList()
             );
         }
 
@@ -171,7 +171,7 @@ public class AST {
         throw new RuntimeException();
     }
 
-    private static ActualParameterNode parseActualParam(Node head) {
+    private static ActualParameterNode parseArgument(Node head) {
         ExprNode first = parseExpr(head.head());
         ExprNode second = null;
         ExprNode third = null;
@@ -191,7 +191,7 @@ public class AST {
     private static FuncOrProcHeadingNode parseHeading(Node heading) {
         String name = parseLiteral(heading.child(1)).getValue();
         List<ASTNode> parameters = heading.size() > 2 ? collectRightRecursiveCall(heading.child(2).child(1), node -> parseParameter(node.head())) : emptyList();
-        ASTNode type = heading.size() > 2 && isToken(heading.last(), Tokens.IDENTIFIER) ? parseLiteral(heading.last()) : null;
+        LiteralNode type = heading.size() > 2 && isToken(heading.last(), Tokens.IDENTIFIER) ? parseLiteral(heading.last()) : null;
         return new FuncOrProcHeadingNode(name, type, parameters);
     }
 
@@ -222,7 +222,7 @@ public class AST {
     }
 
     private static ASTNode parseTypeDefinition(String name, Node type) {
-        if (type.size() == 0) return parseVarAccess(type);
+        if (type.size() == 0) return new TypeAliasNode(name, parseVarAccess(type));
         boolean packed = hasToken(type, Tokens.PACKED);
         final Node head = packed ? type.child(1) : type.head();
         if (hasName(head, "newPointerType")) {
@@ -232,10 +232,10 @@ public class AST {
             if (hasToken(head, Tokens.OPEN_PAREN)) {
                 return new EnumTypeNode(name, collectRightRecursiveCall(head.child(1), node -> parseLiteral(node.head())));
             }
-            return new SubrangeTypeNode(name, parseLiteral(head.head()), parseLiteral(head.child(3)));
+            return parseSubrangeType(name, head);
         }
         if (hasName(head, "arrayType")) {
-            return new ArrayTypeNode(name, collectRightRecursiveCall(head.child(2), AST::parseTypeDefinition), parseTypeDefinition(head.last()), packed);
+            return new ArrayTypeNode(name, collectRightRecursiveCall(head.child(2), node -> parseSubrangeType(node.head())), parseTypeDefinition(head.last()), packed);
         }
         //todo add record type
         if (hasToken(type, Tokens.SET)) {
@@ -245,6 +245,14 @@ public class AST {
             return new FileTypeNode(name, parseTypeDefinition(type.child(2)), packed);
         }
         throw new RuntimeException();
+    }
+
+    private static SubrangeTypeNode parseSubrangeType(String name, Node node) {
+        return new SubrangeTypeNode(name, parseLiteral(node.head()), parseLiteral(node.child(3)));
+    }
+
+    private static SubrangeTypeNode parseSubrangeType(Node node) {
+        return parseSubrangeType("", node);
     }
 
     private static ConstDefinitionNode parseConstDefinition(Node node) {

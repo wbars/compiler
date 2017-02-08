@@ -1,5 +1,8 @@
 package me.wbars.semantic.models;
 
+import me.wbars.semantic.models.types.Type;
+import me.wbars.semantic.models.types.TypeRegistry;
+
 import java.util.List;
 
 public class LiteralParameterNode extends ASTNode {
@@ -18,5 +21,10 @@ public class LiteralParameterNode extends ASTNode {
 
     public LiteralNode getNameIdentifier() {
         return nameIdentifier;
+    }
+
+    @Override
+    protected Type getType(TypeRegistry typeRegistry) {
+        return typeRegistry.processType(this);
     }
 }

@@ -17,18 +17,24 @@ type
        IdentityFoo         = Integer;
 
 var
-  a,a1: array[1..10, 1..10] of real;
-  b,b1: array[1..10] of real;
-  x: array[1..10] of real;
-  n, i, j, k: integer;z, r, g: real;
+  n: Integer;z, r, g: Real;
+  a,a1: array[1..10, 1..10] of Real;
+  b,b1: array[1..10] of Real;
+  x: array[1..10] of Real;
+  zz: SubrangeFoo;
+
+function SQRT(A: Real): Real;
+begin
+    A := A * A;
+end;
 
 procedure DrawLine;
 begin
-	PythagorasFunc := SQRT(A*A + B*B);
+	SQRT(n*n + n*n);
 end;
-procedure EnterUserInfo(TxtCol : SmallInt; TxtBck : SmallInt);
+procedure EnterUserInfo(TxtCol : Integer; TxtBck : Integer);
 begin
-	PythagorasFunc := SQRT(A*A + B*B);
+	SQRT(TxtCol + TxtCol);
 end;
 function PythagorasFunc(A: Real; B: Real) : Real;
 begin
@@ -36,12 +42,9 @@ begin
 end;
 
 begin
-  clrscr;
-  write('Order: ');
-  readln(n);
-  writeln('Input coeff');
+  r := PythagorasFunc(r, g);
   for i := 1 to n do
-  a := 1;
+  n := i;
   for k := 1 to n do
   begin
     for j := k + 1 to n do
@@ -61,7 +64,6 @@ begin
     begin
       g := a[k, j] * x[j];
       r := r + g;
-      a := -1 + -2
     end;
     x[k] := (b[k] - r) / a[k, k];
   end;

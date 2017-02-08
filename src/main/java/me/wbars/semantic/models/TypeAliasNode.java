@@ -3,11 +3,10 @@ package me.wbars.semantic.models;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
-public class SetTypeNode extends CompoundTypeNode {
-    private final ASTNode baseType;
-
-    public SetTypeNode(String name, ASTNode baseType, boolean packed) {
-        super(name, packed);
+public class TypeAliasNode extends ASTNode {
+    private ASTNode baseType;
+    public TypeAliasNode(String name, ASTNode baseType) {
+        super(name);
         this.baseType = baseType;
     }
 

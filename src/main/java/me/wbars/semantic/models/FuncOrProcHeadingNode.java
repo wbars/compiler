@@ -3,10 +3,10 @@ package me.wbars.semantic.models;
 import java.util.List;
 
 public class FuncOrProcHeadingNode extends ASTNode {
-    private final ASTNode resultType;
+    private final LiteralNode resultType;
     private final List<ASTNode> parameters;
 
-    public FuncOrProcHeadingNode(String name, ASTNode resultType, List<ASTNode> parameters) {
+    public FuncOrProcHeadingNode(String name, LiteralNode resultType, List<ASTNode> parameters) {
         super(name);
         this.resultType = resultType;
         this.parameters = parameters;
@@ -16,7 +16,7 @@ public class FuncOrProcHeadingNode extends ASTNode {
         this(name, null, parameters);
     }
 
-    public ASTNode getResultType() {
+    public LiteralNode getResultType() {
         return resultType;
     }
 

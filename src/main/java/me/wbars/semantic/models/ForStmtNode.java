@@ -1,5 +1,8 @@
 package me.wbars.semantic.models;
 
+import me.wbars.semantic.models.types.Type;
+import me.wbars.semantic.models.types.TypeRegistry;
+
 public class ForStmtNode extends ASTNode {
     private final LiteralNode controlVar;
     private final ExprNode initialValue;
@@ -34,5 +37,10 @@ public class ForStmtNode extends ASTNode {
 
     public ASTNode getBody() {
         return body;
+    }
+
+    @Override
+    protected Type getType(TypeRegistry typeRegistry) {
+        return typeRegistry.processType(this);
     }
 }

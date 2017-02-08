@@ -1,5 +1,8 @@
 package me.wbars.semantic.models;
 
+import me.wbars.semantic.models.types.Type;
+import me.wbars.semantic.models.types.TypeRegistry;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,5 +19,10 @@ public class GetIndexNode extends UnaryOpNode {
 
     public List<ASTNode> getIndexes() {
         return indexes;
+    }
+
+    @Override
+    protected Type getType(TypeRegistry typeRegistry) {
+        return typeRegistry.processType(this);
     }
 }

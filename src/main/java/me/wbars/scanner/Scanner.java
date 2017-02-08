@@ -43,7 +43,9 @@ public class Scanner {
                 lexeme = lexeme.substring(0, lexeme.length() - 1);
                 i--;
             }
-            if (state < 0 || lexeme.isEmpty()) throw new RuntimeException(String.valueOf(ch));
+            if (state < 0 || lexeme.isEmpty()) {
+                throw new RuntimeException(String.valueOf(ch));
+            }
             result.add(new Token(transitionTable.getPos(state), lexeme));
         }
         return result;
