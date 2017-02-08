@@ -166,6 +166,11 @@ public class Parser {
             return factor;
         }
 
+        if (isCurrentTokenHasPos(Tokens.SIGNED_INTEGER)) {
+            factor.addChildren(tokenByType(Tokens.SIGNED_INTEGER));
+            return factor;
+        }
+
         if (isCurrentTokenHasPos(Tokens.REALNUMBER)) {
             factor.addChildren(tokenByType(Tokens.REALNUMBER));
             return factor;

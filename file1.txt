@@ -61,6 +61,7 @@ begin
     begin
       g := a[k, j] * x[j];
       r := r + g;
+      a := -1 + -2
     end;
     x[k] := (b[k] - r) / a[k, k];
   end;

@@ -44,4 +44,5 @@ public class Tokens {
     public static final String SET = "SET";
     public static final String PFILE = "FILE";
     public static final String REALNUMBER = "REALNUMBER";
+    public static final String SIGNED_INTEGER = "SIGNED_INTEGER";
 }
