@@ -1,10 +1,11 @@
 package me.wbars.semantic.models;
 
 import me.wbars.generator.JvmBytecodeGenerator;
+import me.wbars.semantic.models.types.Type;
 
-public class AssignmentStatementNode extends BinaryOpNode {
-    public AssignmentStatementNode(ASTNode left, ASTNode right) {
-        super("", left, right);
+public class IdentifierNode extends LiteralNode {
+    public IdentifierNode(String name, Type type) {
+        super(name, type);
     }
 
     @Override

@@ -4,27 +4,32 @@ import me.wbars.parser.models.Tokens;
 import me.wbars.scanner.models.Token;
 import me.wbars.semantic.models.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
 
 public class TypeRegistry {
     private final Map<String, Type> aliases = new HashMap<>();
     private final Map<String, ASTNode> constants = new HashMap<>();
     private final Map<String, ASTNode> functions = new HashMap<>();
+    private final Map<Type, Set<Type>> typeCasts = new HashMap<>();
 
     private SymbolTable table = new SymbolTable(null);
 
-    private static final IntegerType INTEGER = new IntegerType();
+    public static final IntegerType INTEGER = new IntegerType();
+
+    public static final ShortType SHORT = new ShortType();
+    public static final LongType LONG = new LongType();
     public static final StringType STRING = new StringType();
-    private static final BooleanType BOOLEAN = new BooleanType();
-    private static final CharType CHAR = new CharType();
-    private static final DoubleType DOUBLE = new DoubleType();
-    private static final VoidType VOID = new VoidType();
+    public static final BooleanType BOOLEAN = new BooleanType();
+    public static final CharType CHAR = new CharType();
+    public static final DoubleType DOUBLE = new DoubleType();
+    public static final VoidType VOID = new VoidType();
+    public static final Utf8Type UTF8 = new Utf8Type();
 
     private static ArrayType createArrayType(Type type, String lowerBound, String upperBound) {
         return new ArrayType(type, lowerBound, upperBound);
@@ -48,11 +53,21 @@ public class TypeRegistry {
 
     public TypeRegistry() {
         registerBaseTypes();
+        registerTypeCasts();
+    }
+
+    private void registerTypeCasts() {
+        typeCasts.put(INTEGER, singleton(SHORT));
+        typeCasts.put(STRING, singleton(CHAR));
+        typeCasts.put(LONG, new HashSet<>(asList(SHORT, INTEGER)));
+        typeCasts.put(DOUBLE, new HashSet<>(asList(SHORT, INTEGER, LONG)));
     }
 
     private void registerBaseTypes() {
         table.register("Real", DOUBLE);
         table.register("Integer", INTEGER);
+        table.register("Long", LONG);
+        table.register("Short", SHORT);
         table.register("Char", CHAR);
         table.register("String", STRING);
     }
@@ -60,9 +75,11 @@ public class TypeRegistry {
     public static Type fromToken(Token token) {
         switch (token.getPos().name) {
             case Tokens.SIGNED_INTEGER:
-                return INTEGER;
             case Tokens.UNSIGNED_INTEGER:
-                return INTEGER;
+                long l = Math.abs(Long.parseLong(token.getValue()));
+                if (l < Short.MAX_VALUE) return SHORT;
+                if (l < Integer.MAX_VALUE) return INTEGER;
+                return LONG;
             case Tokens.REALNUMBER:
                 return DOUBLE;
             case Tokens.STRING_VAR:
@@ -105,18 +122,18 @@ public class TypeRegistry {
 
         Type rightType = getProcessedType(binaryOpNode.getRight());
 
-        if (leftType == null) throw new RuntimeException("Cant find declaration of " + binaryOpNode.getLeft().getValue());
-        if (rightType == null) throw new RuntimeException("Cant find declaration of " + binaryOpNode.getRight().getValue());
+        if (leftType == null)
+            throw new RuntimeException("Cant find declaration of " + binaryOpNode.getLeft().getValue());
+        if (rightType == null)
+            throw new RuntimeException("Cant find declaration of " + binaryOpNode.getRight().getValue());
 
         return typeCast(leftType, rightType);
     }
 
     private Type typeCast(Type first, Type second) {
         if (first.equals(second)) return first;
-        if (first.equals(DOUBLE) && second.equals(INTEGER) || first.equals(INTEGER) && second.equals(DOUBLE))
-            return DOUBLE;
-        if (first.equals(STRING) && second.equals(CHAR) || first.equals(CHAR) && second.equals(STRING)) return STRING;
-
+        if (typeCasts.get(first).contains(second)) return first;
+        if (typeCasts.get(second).contains(first)) return second;
         throw new RuntimeException("Can't cast " + first.name() + " to " + second.name());
     }
 
@@ -260,5 +277,21 @@ public class TypeRegistry {
 
     public Type processType(ActualParameterNode actualParameterNode) {
         return getProcessedType(actualParameterNode.getFirst());
+    }
+
+    public Map<String, Type> getAliases() {
+        return aliases;
+    }
+
+    public Map<String, ASTNode> getConstants() {
+        return constants;
+    }
+
+    public Map<String, ASTNode> getFunctions() {
+        return functions;
+    }
+
+    public SymbolTable getTable() {
+        return table;
     }
 }

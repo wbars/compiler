@@ -1,0 +1,12 @@
+program b;
+
+var a,b,c: Integer;
+begin
+a := 1 + 2;
+b := 4 * 6;
+c := ((b / a) - 1) * 2 + 1;
+writeln(a);
+writeln(b);
+writeln(c);
+write('Done');
+end.

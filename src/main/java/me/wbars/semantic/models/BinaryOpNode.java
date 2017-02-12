@@ -3,7 +3,7 @@ package me.wbars.semantic.models;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
-public class BinaryOpNode extends ASTNode {
+public abstract class BinaryOpNode extends ASTNode {
     public BinaryOpNode(String value, ASTNode left, ASTNode right) {
         super(value);
         this.left = left;

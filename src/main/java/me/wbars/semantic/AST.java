@@ -4,6 +4,7 @@ import me.wbars.parser.models.Node;
 import me.wbars.parser.models.Tokens;
 import me.wbars.scanner.models.PartOfSpeech;
 import me.wbars.semantic.models.*;
+import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ public class AST {
         }
         if (expr.size() == 1) {
             if (hasName(expr.head(), "varAccess")) return parseRightAssociativeOp(expr.head());
-            return new LiteralNode(expr.head().getTerminal().getValue(), TypeRegistry.fromToken(expr.head().getTerminal()));
+            return createLiteralNode(expr.head());
         }
         return parseSimpleExpr(expr.child(1));
     }
@@ -73,7 +74,13 @@ public class AST {
     }
 
     private static LiteralNode parseLiteral(Node node) {
-        return node.isEmpty() ? new LiteralNode(node.getTerminal().getValue(), TypeRegistry.fromToken(node.getTerminal())) : parseLiteral(node.head());
+        return node.isEmpty() ? createLiteralNode(node) : parseLiteral(node.head());
+    }
+
+    private static LiteralNode createLiteralNode(Node node) {
+        String name = node.getTerminal().getValue();
+        Type type = TypeRegistry.fromToken(node.getTerminal());
+        return isToken(node, Tokens.IDENTIFIER) ? new IdentifierNode(name, type) : new LiteralNode(name, type);
     }
 
     private static ASTNode parseVarAccess(Node varAccess) {
