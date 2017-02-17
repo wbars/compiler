@@ -165,6 +165,7 @@ public class Parser {
         if (tryAddToken(factor, Tokens.UNSIGNED_INTEGER)) return factor;
         if (tryAddToken(factor, Tokens.SIGNED_INTEGER)) return factor;
         if (tryAddToken(factor, Tokens.REALNUMBER)) return factor;
+        if (tryAddToken(factor, Tokens.BOOLEAN)) return factor;
 
         if (isCurrentTokenHasPos(Tokens.IDENTIFIER)) {
             factor.addChildren(derivate(this::varAccess));
@@ -348,10 +349,10 @@ public class Parser {
         stmt.addChildren(tokenByType(Tokens.IF));
         stmt.addChildren(derivate(this::booleanExpr));
         stmt.addChildren(tokenByType(Tokens.THEN));
-        stmt.addChildren(derivate(this::stmt));
+        stmt.addChildren(derivate(this::compoundStatement));
         if (!tryAddToken(stmt, Tokens.ELSE)) return stmt;
 
-        stmt.addChildren(derivate(this::stmt));
+        stmt.addChildren(derivate(this::compoundStatement));
         return stmt;
     }
 

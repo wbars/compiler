@@ -140,7 +140,7 @@ public class AST {
     }
 
     private static List<ASTNode> parseStmtSeq(Node block) {
-        return collectRightRecursiveCall(block.firstNonToken(Tokens.BEGIN), node -> parseStatement(node.head()));
+        return collectStatements(block.firstNonToken(Tokens.BEGIN));
     }
 
     private static ASTNode parseStatement(Node node) {
@@ -175,7 +175,24 @@ public class AST {
                     parseBlock(head)
             );
         }
+        if (hasName(head, "repeatStmt")) {
+            return new RepeatStmtNode(
+                    collectStatements(head.child(1)),
+                    parseExpr(head.last())
+            );
+        }
+        if (hasName(head, "ifStmt")) {
+            return new IfStmtNode(
+                    parseExpr(head.child(1)),
+                    parseStmtSeq(head.child(3)),
+                    head.size() > 4 ? parseStmtSeq(head.last()) : emptyList()
+            );
+        }
         throw new RuntimeException();
+    }
+
+    private static List<ASTNode> collectStatements(Node node) {
+        return collectRightRecursiveCall(node, node1 -> parseStatement(node1.head()));
     }
 
     private static ActualParameterNode parseArgument(Node head) {

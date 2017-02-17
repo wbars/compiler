@@ -70,6 +70,7 @@ public class TypeRegistry {
         table.register("Short", SHORT);
         table.register("Char", CHAR);
         table.register("String", STRING);
+        table.register("Boolean", BOOLEAN);
     }
 
     public static Type fromToken(Token token) {

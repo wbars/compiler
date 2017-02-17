@@ -56,8 +56,8 @@ ASSIGNMENT :=
 RELOP =|!=|>|<|>=|<=
 UPARROW ^
 
-IDENTIFIER (\w)((\w|\d)*)
 BOOLEAN true|false
+IDENTIFIER (\w)((\w|\d)*)
 UNSIGNED_INTEGER \d+
 SIGNED_INTEGER (\-|\+)\d+
 REALNUMBER (\d+).(\d+)
