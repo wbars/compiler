@@ -2,10 +2,10 @@ package me.wbars.semantic.models.types;
 
 public class ArrayType implements Type {
     private Type type;
-    private String lowerBound;
-    private String upperBound;
+    private Integer lowerBound;
+    private Integer upperBound;
 
-    ArrayType(Type type, String lowerBound, String upperBound) {
+    ArrayType(Type type, Integer lowerBound, Integer upperBound) {
         this.type = type;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -15,16 +15,36 @@ public class ArrayType implements Type {
         return type;
     }
 
-    public String getLowerBound() {
+    public Integer getLowerBound() {
         return lowerBound;
     }
 
-    public String getUpperBound() {
+    public Integer getUpperBound() {
         return upperBound;
     }
 
     @Override
     public String name() {
         return "Array";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ArrayType arrayType = (ArrayType) o;
+
+        if (!type.equals(arrayType.type)) return false;
+        if (!lowerBound.equals(arrayType.lowerBound)) return false;
+        return upperBound.equals(arrayType.upperBound);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type.hashCode();
+        result = 31 * result + lowerBound.hashCode();
+        result = 31 * result + upperBound.hashCode();
+        return result;
     }
 }

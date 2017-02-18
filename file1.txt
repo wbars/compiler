@@ -1,23 +1,15 @@
 program binary_search;
 
 var
-  arr:array[1..100] of Integer;
+  arr: array[0..8] of Short;
   mid,ilow,ihigh,search: Integer;
   i,n,fi: Integer;
   found: Boolean;
 begin
-  writeln('Binary search');
-  writeln('array length:');
-  readln(n);
-  writeln('Enter ',n,' numbers: ');
-  for i:=1 to n do begin
-    readln(arr[i]);
-  end;
-  writeln('what number do you want to search?');
-  readln(search);
-  ilow  :=1;
-  ihigh :=n;
-  found :=false;
+  arr := {0, 1, 2, 3, 4, 5, 2, 7, 8 + 1};
+  ilow  := 1;
+  ihigh := n;
+  found := false;
   repeat
     mid := (ilow+ihigh) / 2;
     if search=arr[mid] then begin

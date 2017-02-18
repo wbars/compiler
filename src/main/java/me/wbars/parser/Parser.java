@@ -144,6 +144,7 @@ public class Parser {
     private final Supplier<Node> caseConstantList = createRightRecursiveListSupplier("caseConstantList", this::caseConstant, Tokens.COMMA);
     private final Supplier<Node> recordSectionList = createListSupplier("recordSectionList", this::recordSection, () -> isCurrentTokenHasPos(Tokens.END));
     private final Supplier<Node> indexExprList = createRightRecursiveListSupplier("indexExprList", this::expr, Tokens.COMMA);
+    private final Supplier<Node> arrayLiteralElementsList = createRightRecursiveListSupplier("arrayLiteralElementsList", this::expr, Tokens.COMMA);
 
     private Node expr() {
         Node expr = Node.empty("expr");
@@ -161,6 +162,7 @@ public class Parser {
             addParensDerivate(factor, this.simpleExpr);
             return factor;
         }
+        if (isCurrentTokenHasPos(Tokens.OPEN_CURLY)) return addArrayLiteral();
 
         if (tryAddToken(factor, Tokens.UNSIGNED_INTEGER)) return factor;
         if (tryAddToken(factor, Tokens.SIGNED_INTEGER)) return factor;
@@ -179,6 +181,14 @@ public class Parser {
         if (tryAddToken(factor, Tokens.STRING_VAR)) return factor;
         throwParseException(Tokens.OPEN_PAREN, Tokens.UNSIGNED_INTEGER, Tokens.IDENTIFIER, Tokens.STRING_VAR);
         return null;
+    }
+
+    private Node addArrayLiteral() {
+        Node node = Node.empty("arrayLiteral");
+        node.addChildren(tokenByType(Tokens.OPEN_CURLY));
+        node.addChildren(derivate(arrayLiteralElementsList));
+        node.addChildren(tokenByType(Tokens.CLOSE_CURLY));
+        return node;
     }
 
     private boolean tryAddNode(Node node, Supplier<Node> nodeToAddSupplier, String partOfSpeech) {

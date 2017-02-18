@@ -47,4 +47,6 @@ public class Tokens {
     public static final String SIGNED_INTEGER = "SIGNED_INTEGER";
     public static final String BOOLEAN = "BOOLEAN";
     public static final String SHORT = "SHORT";
+    public static final String OPEN_CURLY = "OPEN_CURLY";
+    public static final String CLOSE_CURLY = "CLOSE_CURLY";
 }

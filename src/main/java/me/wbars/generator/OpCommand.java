@@ -22,7 +22,11 @@ public enum OpCommand {
     IADD(0x60),
     IMUL(0x68),
     IDIV(0x6c),
-    ISUB(0x64)
+    ISUB(0x64),
+    SALOAD(0x35),
+    SASTORE(0x56),
+    NEWARRAY(0xbc, 1),
+    DUP(0x59)
     ;
 
     private final String mnemonic;

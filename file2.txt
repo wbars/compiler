@@ -1,12 +1,6 @@
 program b;
 
-var a,b,c: Integer;
+var arr: array[0..1] of Short;
 begin
-a := 1 + 2;
-b := 4 * 6;
-c := ((b / a) - 1) * 2 + 1;
-writeln(a);
-writeln(b);
-writeln(c);
-write('Done');
+arr := {44, 55};
 end.

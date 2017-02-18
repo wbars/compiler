@@ -2,6 +2,7 @@ package me.wbars.generator;
 
 import me.wbars.generator.code.GeneratedCode;
 import me.wbars.semantic.models.*;
+import me.wbars.semantic.models.types.ArrayType;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
@@ -14,7 +15,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
-import static me.wbars.generator.JvmBytecodeCommandFactory.pushValue;
+import static me.wbars.generator.JvmBytecodeCommandFactory.*;
 
 public class JvmBytecodeGenerator {
     private RegistersTable registersTable = new RegistersTable(null);
@@ -120,7 +121,12 @@ public class JvmBytecodeGenerator {
     }
 
     public int addTypedCommand(BiFunction<Integer, Type, CodeLine> factoryMethod, Integer register, ASTNode node) {
-        lines.add(factoryMethod.apply(register, node.getType()));
+        addTypedCommand(factoryMethod, register, node.getType());
+        return register;
+    }
+
+    public int addTypedCommand(BiFunction<Integer, Type, CodeLine> factoryMethod, Integer register, Type type) {
+        lines.add(factoryMethod.apply(register, type));
         return register;
     }
 
@@ -177,5 +183,28 @@ public class JvmBytecodeGenerator {
         int printIndex = constantPool.getFieldOrMethodIndex("java/io/PrintStream.println", getTypeDescriptor(argumentTypes, TypeRegistry.VOID));
         addCommand(JvmBytecodeCommandFactory::getStatic, outIndex);
         return printIndex;
+    }
+
+    public int generate(ArrayLiteralNode arrayLiteralNode) {
+        addTypedCommand(JvmBytecodeCommandFactory::pushValue, arrayLiteralNode.getItems().size(), TypeRegistry.SHORT);
+        addCommand(JvmBytecodeCommandFactory::newPrimitiveArray, getAType(((ArrayType)arrayLiteralNode.getType()).getType()));
+        for (int i = 0; i < arrayLiteralNode.getItems().size(); i++) {
+            lines.add(dup());
+            lines.add(pushValue(i, TypeRegistry.SHORT));
+            ExprNode item = arrayLiteralNode.getItems().get(i);
+            addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, item);
+            lines.add(arrayElementStore(item.getType()));
+        }
+        return addTypedCommand(JvmBytecodeCommandFactory::storeRegister, registersTable.nextRegister(), arrayLiteralNode);
+    }
+
+    private int getAType(Type type) {
+        if (type == TypeRegistry.INTEGER) return 10;
+        if (type == TypeRegistry.SHORT) return 9;
+        if (type == TypeRegistry.LONG) return 11;
+        if (type == TypeRegistry.DOUBLE) return 7;
+        if (type == TypeRegistry.CHAR) return 5;
+        if (type == TypeRegistry.BOOLEAN) return 4;
+        throw new RuntimeException();
     }
 }

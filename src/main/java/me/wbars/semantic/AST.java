@@ -42,6 +42,7 @@ public class AST {
     }
 
     private static ASTNode parseFactor(Node expr) {
+        if (hasName(expr, "arrayLiteral")) return createArrayLiteralNode(expr);
         if (expr.size() == 4) {
             return new ProcedureStmtNode(
                     parseLiteral(expr.head()),
@@ -81,6 +82,13 @@ public class AST {
         String name = node.getTerminal().getValue();
         Type type = TypeRegistry.fromToken(node.getTerminal());
         return isToken(node, Tokens.IDENTIFIER) ? new IdentifierNode(name, type) : new LiteralNode(name, type);
+    }
+
+
+    private static ArrayLiteralNode createArrayLiteralNode(Node node) {
+        return new ArrayLiteralNode(
+                collectRightRecursiveCall(node.firstNonToken(Tokens.OPEN_CURLY), node1 -> parseExpr(node1.head()))
+        );
     }
 
     private static ASTNode parseVarAccess(Node varAccess) {

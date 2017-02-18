@@ -1,5 +1,6 @@
 package me.wbars.generator;
 
+import me.wbars.semantic.models.types.ArrayType;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
@@ -10,15 +11,15 @@ public class JvmBytecodeCommandFactory {
     private JvmBytecodeCommandFactory() {
     }
 
-    private static final Map<Type, Character> simpleTypePrefixes;
+    private static final Map<Type, String> simpleTypePrefixes;
 
     static {
         simpleTypePrefixes = new HashMap<>();
-        simpleTypePrefixes.put(TypeRegistry.INTEGER, 'i');
-        simpleTypePrefixes.put(TypeRegistry.SHORT, 's');
-        simpleTypePrefixes.put(TypeRegistry.LONG, 'l');
-        simpleTypePrefixes.put(TypeRegistry.STRING, 'a');
-        simpleTypePrefixes.put(TypeRegistry.DOUBLE, 'd');
+        simpleTypePrefixes.put(TypeRegistry.INTEGER, "i");
+        simpleTypePrefixes.put(TypeRegistry.SHORT, "s");
+        simpleTypePrefixes.put(TypeRegistry.LONG, "l");
+        simpleTypePrefixes.put(TypeRegistry.STRING, "a");
+        simpleTypePrefixes.put(TypeRegistry.DOUBLE, "d");
     }
 
     public static CodeLine loadRegister(Integer register, Type type) {
@@ -35,7 +36,12 @@ public class JvmBytecodeCommandFactory {
         if (mnemonic.equals("store") && type == TypeRegistry.SHORT) return OpCommand.ISTORE;
         if (mnemonic.equals("load") && type == TypeRegistry.SHORT) return OpCommand.ILOAD;
 
-        return OpCommand.fromMnemonic(simpleTypePrefixes.get(type) + mnemonic);
+        return OpCommand.fromMnemonic(getTypePrefix(type) + mnemonic);
+    }
+
+    private static String getTypePrefix(Type type) {
+        if (type instanceof ArrayType) return "a";
+        return simpleTypePrefixes.get(type);
     }
 
     private static boolean isArithmetic(String command) {
@@ -44,6 +50,10 @@ public class JvmBytecodeCommandFactory {
 
     public static CodeLine storeRegister(Integer register, Type type) {
         return CodeLine.line(typedCommand(type, "store"), register);
+    }
+
+    public static CodeLine arrayElementStore(Type type) {
+        return CodeLine.line(typedCommand(type, "astore"));
     }
 
     public static CodeLine loadConstant(Integer constantIndex, Type type) {
@@ -83,5 +93,13 @@ public class JvmBytecodeCommandFactory {
 
     public static CodeLine invokeSpecial(Integer index) {
         return CodeLine.line(OpCommand.INVOKESPECIAL, index);
+    }
+
+    public static CodeLine newPrimitiveArray(Integer aType) {
+        return CodeLine.line(OpCommand.NEWARRAY, aType);
+    }
+
+    public static CodeLine dup() {
+        return CodeLine.line(OpCommand.DUP);
     }
 }

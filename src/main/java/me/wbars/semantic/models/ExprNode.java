@@ -8,7 +8,7 @@ public class ExprNode extends BinaryOpNode {
     }
 
     public ExprNode(ASTNode simpleExpr) {
-        super(null, simpleExpr, null);
+        super(simpleExpr.getValue(), simpleExpr, null);
     }
 
     @Override
