@@ -1,5 +1,9 @@
 package me.wbars.semantic.models;
 
+import me.wbars.generator.JvmBytecodeGenerator;
+import me.wbars.semantic.models.types.Type;
+import me.wbars.semantic.models.types.TypeRegistry;
+
 import java.util.List;
 
 public class IfStmtNode extends ASTNode {
@@ -24,5 +28,15 @@ public class IfStmtNode extends ASTNode {
 
     public List<ASTNode> getFalseBranch() {
         return falseBranch;
+    }
+
+    @Override
+    public int generateCode(JvmBytecodeGenerator codeGenerator) {
+        return codeGenerator.generate(this);
+    }
+
+    @Override
+    protected Type getType(TypeRegistry typeRegistry) {
+        return typeRegistry.processType(this);
     }
 }

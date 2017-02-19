@@ -61,7 +61,7 @@ IDENTIFIER (\w)((\w|\d)*)
 UNSIGNED_INTEGER \d+
 SIGNED_INTEGER (\-|\+)\d+
 REALNUMBER (\d+).(\d+)
-SIGN \+|\-|\*|\/
+SIGN \+|\-|\*|\/|&&|\|\|
 STRING_VAR '((\.)+)'
 COLON :
 SEMICOLON ;

@@ -129,7 +129,17 @@ public class TypeRegistry {
         if (rightType == null)
             throw new RuntimeException("Cant find declaration of " + binaryOpNode.getRight().getValue());
 
-        return typeCast(leftType, rightType);
+        return isRelationOperator(binaryOpNode.getValue()) ? BOOLEAN : typeCast(leftType, rightType);
+    }
+
+    private boolean isRelationOperator(String value) {
+        return value.equals("=")
+                || value.equals("!=")
+                || value.equals(">")
+                || value.equals("<")
+                || value.equals(">=")
+                || value.equals("<=")
+                ;
     }
 
     private Type typeCast(Type first, Type second) {
@@ -166,8 +176,8 @@ public class TypeRegistry {
         return VOID;
     }
 
-    private Type getProcessedType(ASTNode typeDenoter) {
-        return typeDenoter.getProcessedType(this);
+    private Type getProcessedType(ASTNode node) {
+        return node.getProcessedType(this);
     }
 
     public Type processType(PointerTypeNode pointerTypeNode) {
@@ -286,7 +296,8 @@ public class TypeRegistry {
         Set<Type> itemsTypes = arrayLiteralNode.getItems().stream()
                 .map(exprNode -> exprNode.getProcessedType(this))
                 .collect(Collectors.toSet());
-        if (itemsTypes.size() > 1) throw new RuntimeException("Items of array " + arrayLiteralNode.getValue() +" has different types");
+        if (itemsTypes.size() > 1)
+            throw new RuntimeException("Items of array " + arrayLiteralNode.getValue() + " has different types");
         return createArrayType(itemsTypes.iterator().next(), 0, arrayLiteralNode.getItems().size() - 1);
     }
 
@@ -304,5 +315,12 @@ public class TypeRegistry {
 
     public SymbolTable getTable() {
         return table;
+    }
+
+    public Type processType(IfStmtNode ifStmtNode) {
+        getProcessedType(ifStmtNode.getCondition());
+        ifStmtNode.getTrueBranch().forEach(this::getProcessedType);
+        ifStmtNode.getFalseBranch().forEach(this::getProcessedType);
+        return VOID;
     }
 }

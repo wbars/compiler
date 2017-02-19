@@ -14,22 +14,39 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static me.wbars.generator.JvmBytecodeCommandFactory.*;
+import static me.wbars.utils.CollectionsUtils.merge;
 
 public class JvmBytecodeGenerator {
-    private RegistersTable registersTable = new RegistersTable(null);
+    private RegistersTable registersTable;
     private final List<CodeLine> lines = new ArrayList<>();
     private ConstantPool constantPool;
     private final Map<String, Function<List<Type>, Integer>> stdLibFunctions = new HashMap<>();
+    private final Map<String, Function<Integer, CodeLine>> reverseRelationMappers = new HashMap<>();
 
     private JvmBytecodeGenerator() {
-        this(new ConstantPool());
+        this(new ConstantPool(), new RegistersTable(null));
     }
 
-    public JvmBytecodeGenerator(ConstantPool constantPool) {
+    public JvmBytecodeGenerator(ConstantPool constantPool, RegistersTable registersTable) {
         this.constantPool = constantPool;
+        this.registersTable = registersTable;
         registerStdLibFunction();
+
+        reverseRelationMappers.put("=", JvmBytecodeCommandFactory::ifCmpNe);
+        reverseRelationMappers.put("!=", JvmBytecodeCommandFactory::ifCmp);
+        reverseRelationMappers.put(">", JvmBytecodeCommandFactory::ifLessOrEqualThan);
+        reverseRelationMappers.put("<", JvmBytecodeCommandFactory::ifGreaterOrEqualThan);
+
+        reverseRelationMappers.put(">=", JvmBytecodeCommandFactory::ifLess);
+        reverseRelationMappers.put("<=", JvmBytecodeCommandFactory::ifGreater);
+
+        reverseRelationMappers.put("", JvmBytecodeCommandFactory::ifEq);
+        reverseRelationMappers.put("!", JvmBytecodeCommandFactory::ifNe);
+
+
     }
 
     private void registerStdLibFunction() {
@@ -41,13 +58,6 @@ public class JvmBytecodeGenerator {
         JvmBytecodeGenerator generator = new JvmBytecodeGenerator();
         programNode.getBlock().generateCode(generator);
         return stateSnapshot(generator);
-    }
-
-    private static <T> List<T> merge(List<T> first, List<T> second) {
-        ArrayList<T> result = new ArrayList<>();
-        result.addAll(first);
-        result.addAll(second);
-        return result;
     }
 
     private static GeneratedCode stateSnapshot(JvmBytecodeGenerator generator) {
@@ -95,9 +105,48 @@ public class JvmBytecodeGenerator {
         return registersTable.lookupOrRegister(identifierNode.getValue());
     }
 
+    private boolean isRelationOperator(String operator) {
+        return reverseRelationMappers.containsKey(operator);
+    }
+
     public int generate(ExprNode exprNode) {
         if (exprNode.getRight() == null) return generateCode(exprNode.getLeft());
-        return -1;//todo general case
+        if (isRelationOperator(exprNode.getValue())) {
+            addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, exprNode.getLeft());
+            addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, exprNode.getRight());
+
+            addRelationBlock(
+                    exprNode.getValue(),
+                    singletonList(JvmBytecodeCommandFactory.pushValue(1, TypeRegistry.INTEGER)),
+                    singletonList(JvmBytecodeCommandFactory.pushValue(0, TypeRegistry.INTEGER))
+            );
+            return addTypedCommand(JvmBytecodeCommandFactory::storeRegister, registersTable.nextRegister(), TypeRegistry.INTEGER);
+        }
+        return -1;
+    }
+
+    private void addRelationBlock(String operator, List<CodeLine> trueBranch, List<CodeLine> falseBranch) {
+        OpCommand dummyCommand = reverseRelationMappers.get(operator).apply(-1).getCommand();
+        OpCommand dummyGotoCommand = JvmBytecodeCommandFactory.gotoCommand(-1).getCommand();
+
+        addCommand(reverseRelationMappers.get(operator), getSize(merge(getCommands(trueBranch), asList(dummyGotoCommand, dummyCommand))));
+        lines.addAll(trueBranch);
+
+        addCommand(JvmBytecodeCommandFactory::gotoCommand, getSize(merge(
+                getCommands(falseBranch),
+                singletonList(dummyGotoCommand))));
+        lines.addAll(falseBranch);
+
+    }
+
+    private List<OpCommand> getCommands(List<CodeLine> trueBranch) {
+        return trueBranch.stream().map(CodeLine::getCommand).collect(Collectors.toList());
+    }
+
+    private int getSize(List<OpCommand> commands) {
+        return commands.stream()
+                .mapToInt(opCommand -> opCommand.getArgumentsSize() + 2) //todo each generated command get followed by 1-byte nop
+                .sum();
     }
 
     public int generate(BinaryArithmeticOpNode binaryArithmeticOpNode) {
@@ -188,7 +237,7 @@ public class JvmBytecodeGenerator {
 
     public int generate(ArrayLiteralNode arrayLiteralNode) {
         addTypedCommand(JvmBytecodeCommandFactory::pushValue, arrayLiteralNode.getItems().size(), TypeRegistry.SHORT);
-        addCommand(JvmBytecodeCommandFactory::newPrimitiveArray, getAType(((ArrayType)arrayLiteralNode.getType()).getType()));
+        addCommand(JvmBytecodeCommandFactory::newPrimitiveArray, getAType(((ArrayType) arrayLiteralNode.getType()).getType()));
         for (int i = 0; i < arrayLiteralNode.getItems().size(); i++) {
             lines.add(dup());
             lines.add(pushValue(i, TypeRegistry.SHORT));
@@ -214,6 +263,22 @@ public class JvmBytecodeGenerator {
         getIndexNode.getIndexes().forEach(n -> addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, n));
         lines.add(JvmBytecodeCommandFactory.arrayElementLoad(getIndexNode.getType()));
         return addTypedCommand(JvmBytecodeCommandFactory::storeRegister, registersTable.nextRegister(), getIndexNode.getType());
+    }
+
+    public int generate(IfStmtNode ifStmtNode) {
+        addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, ifStmtNode.getCondition());
+        addRelationBlock(
+                "",
+                getLines(ifStmtNode.getTrueBranch()),
+                getLines(ifStmtNode.getFalseBranch())
+        );
+        return -1;
+    }
+
+    public List<CodeLine> getLines(List<ASTNode> nodes) {
+        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool, registersTable);
+        nodes.forEach(generator::generateCode);
+        return generator.lines;
     }
 }
 

@@ -26,7 +26,20 @@ public enum OpCommand {
     SALOAD(0x35),
     SASTORE(0x56),
     NEWARRAY(0xbc, 1),
-    DUP(0x59)
+    DUP(0x59),
+    GOTO(0xa7, 2),
+    IF_ICMPNE(0xa0, 2),
+    IF_ICMPEQ(0x9f, 2),
+    IF_ICMPLE(0xa4, 2),
+    IF_ICMPGE(0xa2, 2),
+    IF_ICMPLT(0xa1, 2),
+    IF_ICMPGT(0xa3, 2),
+
+    IFEQ(0x99, 2),
+    IFNE(0x9a, 2),
+
+    IAND(0x7e),
+    IOR(0x80),
     ;
 
     private final String mnemonic;

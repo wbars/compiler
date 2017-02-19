@@ -38,4 +38,6 @@ public class RegistersTable {
     public int nextRegister() {
         return maxRegister++;
     }
+
+    public int current() { return maxRegister; }
 }

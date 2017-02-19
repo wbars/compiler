@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.Double.parseDouble;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
@@ -27,6 +28,7 @@ public class ConstantPool {
 
     private void registerTypeConstantMapping() {
         typeConstantMapping.put(TypeRegistry.INTEGER, (value) -> new IntegerConstantInfo(parseInt(value), constants.size()));
+        typeConstantMapping.put(TypeRegistry.BOOLEAN, (value) -> new IntegerConstantInfo(parseBoolean(value) ? 1 : 0, constants.size()));
         typeConstantMapping.put(TypeRegistry.DOUBLE, (value) -> new DoubleConstantInfo(parseDouble(value), constants.size()));
         typeConstantMapping.put(TypeRegistry.LONG, (value) -> new DoubleConstantInfo(parseLong(value), constants.size()));
         typeConstantMapping.put(TypeRegistry.STRING, (value) -> new StringConstantInfo(trimQuotes(value), getConstantIndex(trimQuotes(value), TypeRegistry.UTF8), constants.size()));

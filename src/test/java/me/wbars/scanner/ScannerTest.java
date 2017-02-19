@@ -126,4 +126,23 @@ public class ScannerTest extends TestCase {
                 tokens
         );
     }
+
+    public void testLogicalTokens() throws Exception {
+        TransitionTable table = getTableFromString("" +
+                "A a\n" +
+                "LOGICAL &&|\\|\\|\n");
+        Token[] tokens = Scanner.scan(
+                "a || a && a",
+                table
+        ).toArray(new Token[0]);
+
+        Token A = Token.create("A", "a");
+        Token OR = Token.create("LOGICAL", "||");
+        Token AND = Token.create("LOGICAL", "&&");
+
+        assertArrayEquals(
+                new Token[]{A, OR, A, AND, A},
+                tokens
+        );
+    }
 }

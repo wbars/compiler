@@ -133,9 +133,9 @@ public class Parser {
 
     private final Supplier<Node> indexList = createRightRecursiveListSupplier("indexList", this::ordinalType, Tokens.COMMA);
     private final Supplier<Node> term = createRightRecursiveListSupplier("term", this::factor, Tokens.SIGN,
-            () -> !isCurrentTokenHasValue("*") && !isCurrentTokenHasValue("/"));
+            () -> !isCurrentTokenHasValue("*") && !isCurrentTokenHasValue("/") && !isCurrentTokenHasValue("&&"));
     private final Supplier<Node> simpleExpr = createRightRecursiveListSupplier("simpleExpr", term, Tokens.SIGN,
-            () -> !isCurrentTokenHasValue("+") && !isCurrentTokenHasValue("-"));
+            () -> !isCurrentTokenHasValue("+") && !isCurrentTokenHasValue("-") && !isCurrentTokenHasValue("||"));
     private final Supplier<Node> labelList = createRightRecursiveListSupplier("labelList", () -> tokenByType(Tokens.UNSIGNED_INTEGER), Tokens.COMMA);
     private final Supplier<Node> actualParamList = createRightRecursiveListSupplier("actualParamList", this::actualParam, Tokens.COMMA);
     private final Supplier<Node> formalParameterSectionList = createRightRecursiveListSupplier("formalParameterSectionList", this::formalParameterSection, Tokens.SEMICOLON);
