@@ -56,6 +56,10 @@ public class JvmBytecodeCommandFactory {
         return CodeLine.line(typedCommand(type, "astore"));
     }
 
+    public static CodeLine arrayElementLoad(Type type) {
+        return CodeLine.line(typedCommand(type, "aload"));
+    }
+
     public static CodeLine loadConstant(Integer constantIndex, Type type) {
         return CodeLine.line(typedCommand(type, "ldc_w"), constantIndex);
     }

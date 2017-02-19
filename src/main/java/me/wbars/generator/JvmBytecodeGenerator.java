@@ -161,6 +161,7 @@ public class JvmBytecodeGenerator {
         if (type == TypeRegistry.BOOLEAN) return "Z";
         if (type == TypeRegistry.LONG) return "J";
         if (type == TypeRegistry.STRING) return "Ljava/lang/String;";
+        if (type == TypeRegistry.SHORT) return "I";
         return String.valueOf(type.name().toUpperCase().charAt(0));
     }
 
@@ -207,4 +208,12 @@ public class JvmBytecodeGenerator {
         if (type == TypeRegistry.BOOLEAN) return 4;
         throw new RuntimeException();
     }
+
+    public int generate(GetIndexNode getIndexNode) {
+        addTypedCommand(JvmBytecodeCommandFactory::loadRegister, registersTable.lookupOrRegister(getIndexNode.getTarget().getValue()), getIndexNode.getTarget());
+        getIndexNode.getIndexes().forEach(n -> addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, n));
+        lines.add(JvmBytecodeCommandFactory.arrayElementLoad(getIndexNode.getType()));
+        return addTypedCommand(JvmBytecodeCommandFactory::storeRegister, registersTable.nextRegister(), getIndexNode.getType());
+    }
 }
+

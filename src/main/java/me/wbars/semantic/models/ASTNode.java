@@ -35,6 +35,6 @@ public abstract class ASTNode {
     }
 
     public int generateCode(JvmBytecodeGenerator codeGenerator) {
-        return -1;
+        throw new UnsupportedOperationException();
     }
 }

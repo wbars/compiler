@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
 
@@ -133,8 +134,8 @@ public class TypeRegistry {
 
     private Type typeCast(Type first, Type second) {
         if (first.equals(second)) return first;
-        if (typeCasts.get(first).contains(second)) return first;
-        if (typeCasts.get(second).contains(first)) return second;
+        if (typeCasts.getOrDefault(first, emptySet()).contains(second)) return first;
+        if (typeCasts.getOrDefault(second, emptySet()).contains(first)) return second;
         throw new RuntimeException("Can't cast " + first.name() + " to " + second.name());
     }
 
@@ -261,6 +262,7 @@ public class TypeRegistry {
 
     public Type processType(GetIndexNode getIndexNode) {
         Type type = getProcessedType(getIndexNode.getTarget());
+        getIndexNode.getIndexes().forEach(this::getProcessedType);
         for (int i = 0; i < getIndexNode.getIndexes().size(); i++) {
             // surely multidimensional array
             type = ((ArrayType) type).getType();
