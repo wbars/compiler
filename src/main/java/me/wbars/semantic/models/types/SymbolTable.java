@@ -1,10 +1,8 @@
 package me.wbars.semantic.models.types;
 
-import java.util.HashMap;
-import java.util.Map;
+import me.wbars.utils.Registry;
 
-public class SymbolTable {
-    private final Map<String, Type> identifiersTypes = new HashMap<>();
+public class SymbolTable extends Registry<Type> {
     private final SymbolTable prev;
     private SymbolTable next;
 
@@ -13,13 +11,16 @@ public class SymbolTable {
         if (prev != null) prev.next = this;
     }
 
+    @Override
     public void register(String literal, Type type) {
-        if (identifiersTypes.putIfAbsent(literal, type) != null) throw new RuntimeException();
+        if (lookup(literal) != null) throw new RuntimeException();
+        super.register(literal, type);
     }
 
-    public Type get(String literal) {
-        Type type = identifiersTypes.get(literal);
-        return type != null || prev == null ? type : prev.get(literal);
+    @Override
+    public Type lookup(String literal) {
+        Type type = super.lookup(literal);
+        return type != null || prev == null ? type : prev.lookup(literal);
     }
 
     public SymbolTable getNext() {

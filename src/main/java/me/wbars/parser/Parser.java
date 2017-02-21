@@ -404,7 +404,7 @@ public class Parser {
     private Node stmtSeq1() {
         if (!isCurrentTokenHasPos(Tokens.SEMICOLON)) return null;
         Node stmtSeq1 = Node.terminal("stmtSeq1", requireTokenByType(Tokens.SEMICOLON));
-        if (isCurrentTokenHasPos(Tokens.END)) return null;
+        if (isCurrentTokenHasPos(Tokens.END) || isCurrentTokenHasPos(Tokens.UNTIL)) return null;
         stmtSeq1.addChildren(derivate(this::stmt));
         stmtSeq1.addChildren(derivate(this::stmtSeq1));
         return stmtSeq1;

@@ -16,7 +16,6 @@ public enum OpCommand {
     LDC2_W(0x14, 2),
     ASTORE(0x3a, 1),
     INVOKEVIRTUAL(0xb6, 2),
-    SIPUSH(0x11, 2),
     ISTORE(0x36, 1),
     ILOAD(0x15, 1),
     IADD(0x60),
@@ -40,6 +39,10 @@ public enum OpCommand {
 
     IAND(0x7e),
     IOR(0x80),
+
+    IASTORE(0x4f),
+    IALOAD(0x2e),
+    ARRAYLENGTH(0xbe)
     ;
 
     private final String mnemonic;
@@ -78,5 +81,9 @@ public enum OpCommand {
     @Override
     public String toString() {
         return mnemonic;
+    }
+
+    public int bytecodeSize() {
+        return argumentsSize + 2; //todo each generated command get followed by 1-byte nop
     }
 }

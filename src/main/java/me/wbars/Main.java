@@ -25,15 +25,13 @@ public class Main {
 //        TransitionTable table = stringGrammarReader.readTable();
 //        ScannerFilePersister.writeToFile(table, "table");
         TransitionTable table1 = ScannerFilePersister.fromFile("table");
-        List<Token> scan = Scanner.scan(getFileContents("file2.txt"), table1);
+        List<Token> scan = Scanner.scan(getFileContents("file1.txt"), table1);
         Node parse = Parser.parse(scan);
         ProgramNode ast = AST.parseProgram(parse);
         TypeRegistry typeRegistry = new TypeRegistry();
         ast.getProcessedType(typeRegistry);
         GeneratedCode generatedCode = JvmBytecodeGenerator.generateCode(ast);
-        generatedCode.getLines().forEach(System.out::println);
         CodeToHexClassFileConverter.toFile(generatedCode, "Main.class");
-        System.out.println("Done");
     }
 
     private static String getFileContents(String path) throws IOException {

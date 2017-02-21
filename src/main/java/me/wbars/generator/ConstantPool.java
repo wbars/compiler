@@ -40,11 +40,11 @@ public class ConstantPool {
     }
 
     public int getFieldOrMethodIndex(String name, String typeDescriptor) {
-        return getOrRegister(getRepresentation(name, typeDescriptor), () -> registerStaticFieldOrMethod(name, typeDescriptor));
+        return getOrRegister(() -> registerStaticFieldOrMethod(name, typeDescriptor));
     }
 
     public int getConstantIndex(String value, Type type) {
-        return getOrRegister(value, () -> registerConstant(value, type));
+        return getOrRegister(() -> registerConstant(value, type));
     }
 
     private ConstantInfo registerConstant(String value, Type type) {
@@ -52,11 +52,11 @@ public class ConstantPool {
         return typeConstantMapping.get(type).apply(value);
     }
 
-    private int getOrRegister(String value, Supplier<ConstantInfo> factoryMethod) {
+    private int getOrRegister(Supplier<ConstantInfo> factoryMethod) {
         //todo figure out tag without eager creating object
         ConstantInfo constantInfo = factoryMethod.get();
         return constants.stream()
-                .filter(c -> c != null && c.getRawValue().equals(value) && c.getTag() == constantInfo.getTag())
+                .filter(c -> c != null && c.getRawValue().equals(constantInfo.getRawValue()) && c.getTag() == constantInfo.getTag())
                 .findAny().orElseGet(() -> addToPool(constantInfo)).getIndex();
     }
 
@@ -68,14 +68,14 @@ public class ConstantPool {
     private ConstantInfo registerStaticFieldOrMethod(String name, String descriptor) {
         String[] nameParts = name.split("\\.");
         int classIndex = getClass(nameParts[0]);
-        int nameAndTypeIndex = getOrRegister(getRepresentation(nameParts[1], descriptor), () -> registerNameAndType(nameParts[1], descriptor));
+        int nameAndTypeIndex = getOrRegister(() -> registerNameAndType(nameParts[1], descriptor));
         return descriptor.startsWith("(")
                 ? new MethodConstantInfo(getRepresentation(name, descriptor), classIndex, nameAndTypeIndex, constants.size())
                 : new FieldConstantInfo(getRepresentation(name, descriptor), classIndex, nameAndTypeIndex, constants.size());
     }
 
     public int getClass(String name) {
-        return getOrRegister(name, () -> registerClass(name));
+        return getOrRegister(() -> registerClass(name));
     }
 
     private static String getRepresentation(String name, String descriptor) {

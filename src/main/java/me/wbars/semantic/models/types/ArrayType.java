@@ -1,12 +1,14 @@
 package me.wbars.semantic.models.types;
 
+import static java.util.Objects.requireNonNull;
+
 public class ArrayType implements Type {
     private Type type;
     private Integer lowerBound;
     private Integer upperBound;
 
     ArrayType(Type type, Integer lowerBound, Integer upperBound) {
-        this.type = type;
+        this.type = requireNonNull(type);
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
     }

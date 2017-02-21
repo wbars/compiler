@@ -1,5 +1,6 @@
 package me.wbars.semantic.models;
 
+import me.wbars.generator.JvmBytecodeGenerator;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
@@ -29,5 +30,10 @@ public class ActualParameterNode extends ASTNode {
     @Override
     protected Type getType(TypeRegistry typeRegistry) {
         return typeRegistry.processType(this);
+    }
+
+    @Override
+    public int generateCode(JvmBytecodeGenerator codeGenerator) {
+        return codeGenerator.generate(this);
     }
 }

@@ -3,6 +3,7 @@ package me.wbars.semantic.models.types;
 import me.wbars.parser.models.Tokens;
 import me.wbars.scanner.models.Token;
 import me.wbars.semantic.models.*;
+import me.wbars.utils.Registry;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -13,8 +14,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
 
-public class TypeRegistry {
-    private final Map<String, Type> aliases = new HashMap<>();
+public class TypeRegistry extends Registry<Type> {
     private final Map<String, ASTNode> constants = new HashMap<>();
     private final Map<String, ASTNode> functions = new HashMap<>();
     private final Map<Type, Set<Type>> typeCasts = new HashMap<>();
@@ -23,7 +23,6 @@ public class TypeRegistry {
 
     public static final IntegerType INTEGER = new IntegerType();
 
-    public static final ShortType SHORT = new ShortType();
     public static final LongType LONG = new LongType();
     public static final StringType STRING = new StringType();
     public static final BooleanType BOOLEAN = new BooleanType();
@@ -58,20 +57,21 @@ public class TypeRegistry {
     }
 
     private void registerTypeCasts() {
-        typeCasts.put(INTEGER, singleton(SHORT));
         typeCasts.put(STRING, singleton(CHAR));
-        typeCasts.put(LONG, new HashSet<>(asList(SHORT, INTEGER)));
-        typeCasts.put(DOUBLE, new HashSet<>(asList(SHORT, INTEGER, LONG)));
+        typeCasts.put(LONG, new HashSet<>(Collections.singletonList(INTEGER)));
+        typeCasts.put(DOUBLE, new HashSet<>(asList(INTEGER, LONG)));
     }
 
     private void registerBaseTypes() {
         table.register("Real", DOUBLE);
         table.register("Integer", INTEGER);
         table.register("Long", LONG);
-        table.register("Short", SHORT);
         table.register("Char", CHAR);
         table.register("String", STRING);
         table.register("Boolean", BOOLEAN);
+
+        table.register("len", INTEGER);
+
     }
 
     public static Type fromToken(Token token) {
@@ -79,7 +79,6 @@ public class TypeRegistry {
             case Tokens.SIGNED_INTEGER:
             case Tokens.UNSIGNED_INTEGER:
                 long l = Math.abs(Long.parseLong(token.getValue()));
-                if (l < Short.MAX_VALUE) return SHORT;
                 if (l < Integer.MAX_VALUE) return INTEGER;
                 return LONG;
             case Tokens.REALNUMBER:
@@ -105,7 +104,7 @@ public class TypeRegistry {
         });
         block.getTypeDefinitions().forEach(t -> {
             getProcessedType(t);
-            aliases.put(t.getValue(), t.getType());
+            register(t.getValue(), t.getType());
         });
         block.getVarDeclarations().forEach(this::getProcessedType);
         block.getProcOrFunctionDeclarations().forEach(this::getProcessedType);
@@ -150,19 +149,19 @@ public class TypeRegistry {
     }
 
     public Type processType(LiteralNode literal) {
-        return lookupType(literal.getValue());
+        return lookup(literal.getValue());
     }
 
-    private Type lookupType(String identifier) {
-        Type type = table.get(identifier);
-        return type != null ? type : aliases.getOrDefault(identifier, null);
+    public Type lookup(String identifier) {
+        Type type = table.lookup(identifier);
+        return type != null ? type : super.lookup(identifier);
     }
 
     public Type processType(ProcedureStmtNode procedureStmtNode) {
         procedureStmtNode.getArguments().forEach(this::getProcessedType);
 
         String procedureName = procedureStmtNode.getIdentifier().getValue();
-        Type type = lookupType(procedureName);
+        Type type = lookup(procedureName);
         if (type != null) return type;
 
         return ofNullable(functions.get(procedureName))
@@ -301,10 +300,6 @@ public class TypeRegistry {
         return createArrayType(itemsTypes.iterator().next(), 0, arrayLiteralNode.getItems().size() - 1);
     }
 
-    public Map<String, Type> getAliases() {
-        return aliases;
-    }
-
     public Map<String, ASTNode> getConstants() {
         return constants;
     }
@@ -321,6 +316,12 @@ public class TypeRegistry {
         getProcessedType(ifStmtNode.getCondition());
         ifStmtNode.getTrueBranch().forEach(this::getProcessedType);
         ifStmtNode.getFalseBranch().forEach(this::getProcessedType);
+        return VOID;
+    }
+
+    public Type processType(RepeatStmtNode repeatStmtNode) {
+        getProcessedType(repeatStmtNode.getUntilExpression());
+        repeatStmtNode.getStatements().forEach(this::getProcessedType);
         return VOID;
     }
 }

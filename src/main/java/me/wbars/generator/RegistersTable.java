@@ -8,14 +8,12 @@ public class RegistersTable {
 
     private final Map<String, Integer> identifiersRegisters = new HashMap<>();
     private int maxRegister = 0;
+    private int forBlockEnd;
 
-    public RegistersTable(RegistersTable prev) {
+    public RegistersTable(RegistersTable prev, int forBlockEnd) {
         this.prev = prev;
+        this.forBlockEnd = forBlockEnd;
         if (prev != null) this.maxRegister = prev.maxRegister;
-    }
-
-    public RegistersTable getPrev() {
-        return prev;
     }
 
     public Integer register(String identifier) {
@@ -39,5 +37,7 @@ public class RegistersTable {
         return maxRegister++;
     }
 
-    public int current() { return maxRegister; }
+    public int blockEndIndex() {
+        return forBlockEnd;
+    }
 }
