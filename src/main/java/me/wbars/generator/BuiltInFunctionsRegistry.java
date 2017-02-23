@@ -6,9 +6,7 @@ import me.wbars.semantic.models.types.ArrayType;
 import me.wbars.semantic.models.types.TypeRegistry;
 import me.wbars.utils.Registry;
 
-import java.util.function.Function;
-
-public class BuiltInFunctionsRegistry extends Registry<Function<ProcedureStmtNode, Integer>> {
+public class BuiltInFunctionsRegistry extends Registry<NativeFunction<ProcedureStmtNode>> {
     private final JvmBytecodeGenerator generator;
 
     BuiltInFunctionsRegistry(JvmBytecodeGenerator generator) {

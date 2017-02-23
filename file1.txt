@@ -1,29 +1,31 @@
 program binary_search;
 
-var
-  arr: array[0..8] of Integer;
-  mid,ilow,ihigh,search: Integer;
-  i,n,fi: Integer;
-  found: Boolean;
+procedure MergeSort(a,c: Integer);
+var x,j,i,n1,n2: Integer; rez, mas:array[1..1000] of Integer;
 begin
-  arr := {0, 1, 2, 3, 4, 5, 50, 100, 120};
-  n := 8;
-  ilow  := 0;
-  ihigh := n - 1;
-  found := false;
-  search := 50;
-  repeat
-    mid := (ilow + ihigh) / 2;
-    if search = arr[mid] then begin
-      found := true;
-      fi := mid;
-      break;
+if c <= a then exit(1)
+else begin
+    x := (a + c) / 2;
+    MergeSort(a,x);
+    MergeSort(x + 1,c);
+    n1 := a;
+    n2 := x + 1;
+    for i := a to c do begin
+    if (n1 < x + 1) && ((n2 > c) || (mas[n1] < mas[n2])) then
+        begin
+        rez[i] := mas[n1];
+        inc(n1);
+    end
+    else begin
+             rez[i] := mas[n2];
+             inc(n2);
+             end;
     end;
-    if search < arr[mid] then
-        ihigh := mid - 1
-    else
-        ilow := mid + 1
-  until ihigh < ilow;
-  if found then writeln(fi)
-  else writeln('Element NOT found');
+for j := a to c do
+    mas[j] := rez[j];
+end;
+end;
+
+begin
+MergeSort(1,2);
 end.

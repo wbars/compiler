@@ -23,7 +23,7 @@ public class JvmBytecodeCommandFactory {
     }
 
     public static CodeLine loadRegister(Integer register, Type type) {
-        return CodeLine.line(typedCommand(type, "load"), register);
+          return CodeLine.line(typedCommand(type, "load"), register);
     }
 
     private static OpCommand typedCommand(Type type, String mnemonic) {
@@ -146,5 +146,9 @@ public class JvmBytecodeCommandFactory {
 
     public static CodeLine arrayLength() {
         return CodeLine.line(OpCommand.ARRAYLENGTH);
+    }
+
+    public static CodeLine inc(Integer argument /** todo rename **/) {
+        return CodeLine.line(OpCommand.INC, argument);
     }
 }

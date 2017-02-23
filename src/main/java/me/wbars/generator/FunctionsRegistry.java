@@ -5,9 +5,8 @@ import me.wbars.semantic.models.types.TypeRegistry;
 import me.wbars.utils.Registry;
 
 import java.util.List;
-import java.util.function.Function;
 
-public class FunctionsRegistry extends Registry<Function<List<Type>, Integer>> {
+public class FunctionsRegistry extends Registry<NativeFunction<List<Type>>> {
     private final JvmBytecodeGenerator generator;
 
     public FunctionsRegistry(JvmBytecodeGenerator generator) {

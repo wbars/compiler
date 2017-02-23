@@ -159,7 +159,7 @@ public class Parser {
     private Node factor() {
         Node factor = Node.empty("Factor");
         if (isCurrentTokenHasPos(Tokens.OPEN_PAREN)) {
-            addParensDerivate(factor, this.simpleExpr);
+            addParensDerivate(factor, this::expr);
             return factor;
         }
         if (isCurrentTokenHasPos(Tokens.OPEN_CURLY)) return addArrayLiteral();
@@ -338,7 +338,13 @@ public class Parser {
         Node stmt = Node.empty("procedureStmt");
         stmt.addChildren(tokenByType(Tokens.IDENTIFIER));
         if (!isCurrentTokenHasPos(Tokens.OPEN_PAREN)) return stmt;
-        addParensDerivate(stmt, actualParamList);
+
+        if (tokenHasPos(tokens.lookahead(), Tokens.CLOSE_PAREN)) {
+            addParensDerivate(stmt, () -> Node.empty("actualParamList"));
+        } else {
+            addParensDerivate(stmt, actualParamList);
+        }
+
         return stmt;
     }
 

@@ -254,10 +254,11 @@ public class TypeRegistry extends Registry<Type> {
         return dispatchInNestedScope(() -> {
             final LiteralNode controlVar = forStmtNode.getControlVar();
             final ExprNode initialValue = forStmtNode.getInitialValue();
-            table.register(controlVar.getValue(), getProcessedType(initialValue));
+            getProcessedType(forStmtNode.getFinalValue());
+            getProcessedType(initialValue);
+            if (table.lookup(controlVar.getValue()) == null) table.register(controlVar.getValue(), initialValue.getType());
             getProcessedType(controlVar);
-
-            getProcessedType(forStmtNode.getBody());
+            forStmtNode.getStatements().forEach(this::getProcessedType);
 
             return VOID;
         });

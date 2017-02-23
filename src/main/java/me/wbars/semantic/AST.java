@@ -53,7 +53,7 @@ public class AST {
             if (hasName(expr.head(), "varAccess")) return parseRightAssociativeOp(expr.head());
             return createLiteralNode(expr.head());
         }
-        return parseSimpleExpr(expr.child(1));
+        return parseExpr(expr.child(1));
     }
 
     private static boolean hasName(Node node, String... names) {
@@ -162,7 +162,7 @@ public class AST {
         if (hasName(head, "procedureStmt")) {
             return new ProcedureStmtNode(
                     parseLiteral(head.head()),
-                    head.size() > 1 ? collectRightRecursiveCall(
+                    head.size() > 1 && head.child(2).size() > 0 ? collectRightRecursiveCall(
                             head.child(2), n1 -> parseArgument(n1.head())) : emptyList()
             );
         }
@@ -180,7 +180,7 @@ public class AST {
                     parseExpr(head.child(3)),
                     parseExpr(head.child(5)),
                     parseLiteral(head.child(4)).getValue().equals("to"),
-                    parseBlock(head)
+                    collectStatements(head.last().firstNonToken(Tokens.BEGIN))
             );
         }
         if (hasName(head, "repeatStmt")) {

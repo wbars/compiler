@@ -42,8 +42,8 @@ public enum OpCommand {
 
     IASTORE(0x4f),
     IALOAD(0x2e),
-    ARRAYLENGTH(0xbe)
-    ;
+    ARRAYLENGTH(0xbe),
+    INC(0x84, 2);
 
     private final String mnemonic;
     private final int code;

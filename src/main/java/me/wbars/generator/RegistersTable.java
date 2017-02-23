@@ -40,4 +40,8 @@ public class RegistersTable {
     public int blockEndIndex() {
         return forBlockEnd;
     }
+
+    public void setForBlockEnd(int forBlockEnd) {
+        this.forBlockEnd = forBlockEnd;
+    }
 }

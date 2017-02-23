@@ -1,21 +1,13 @@
 program binary_search;
 
-Procedure MergeSort(a,c:integer);
-var x,j,i,n1,n2:integer; rez:array[1..1000] of integer;
+var
+  arr: array[0..8] of Integer;
+  mid,ilow,ihigh,search: Integer;
+  i,n,fi, j: Integer;
+  found: Boolean;
 begin
-if c<=a then exit else begin
-x:=(a+c) div 2;
-MergeSort(a,x);MergeSort(x+1,c);
-n1:=a; n2:=x+1;
-for i:=a to c do begin
-if (n1<x+1)and((n2>c)or(mas[n1]<mas[n2])) then
-    begin
-    rez[i]:=mas[n1]; inc(n1);
-    end else begin
-             rez[i]:=mas[n2]; inc(n2);
-             end;
-                 end;
-for j:=a to c do
-mas[j]:=rez[j];
-end;
-end;
+  for j := 0 to 10 do begin
+      writeln(j);
+      if j > 5 then break;
+    end;
+end.

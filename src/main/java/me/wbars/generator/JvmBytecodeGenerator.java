@@ -22,12 +22,11 @@ import static me.wbars.utils.CollectionsUtils.merge;
 
 public class JvmBytecodeGenerator {
     private RegistersTable registersTable;
-    private final int codeOffset;
     private final List<CodeLine> lines = new ArrayList<>();
     private ConstantPool constantPool;
     private final Map<String, Function<Integer, CodeLine>> reverseRelationMappers = new HashMap<>();
-    private final Registry<Function<ProcedureStmtNode, Integer>> builtInFunctionsRegistry = new BuiltInFunctionsRegistry(this);
-    private final Registry<Function<List<Type>, Integer>> functionRegistry = new FunctionsRegistry(this);
+    private final Registry<NativeFunction<ProcedureStmtNode>> builtInFunctionsRegistry = new BuiltInFunctionsRegistry(this);
+    private final Registry<NativeFunction<List<Type>>> functionRegistry = new FunctionsRegistry(this);
 
 
     private JvmBytecodeGenerator() {
@@ -37,7 +36,6 @@ public class JvmBytecodeGenerator {
     private JvmBytecodeGenerator(ConstantPool constantPool, RegistersTable registersTable, int codeOffset) {
         this.constantPool = constantPool;
         this.registersTable = registersTable;
-        this.codeOffset = codeOffset;
 
         registerRelationMappers();
     }
@@ -115,30 +113,26 @@ public class JvmBytecodeGenerator {
             addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, exprNode.getLeft());
             addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, exprNode.getRight());
 
-            addRelationBlock(
-                    exprNode.getValue(),
-                    singletonList(loadInteger(1)),
-                    singletonList(loadInteger(0))
+            String operator = exprNode.getValue();
+            List<CodeLine> trueBranch = singletonList(loadInteger(1));
+            List<CodeLine> falseBranch = singletonList(loadInteger(0));
+
+            OpCommand dummyOperatorCommand = reverseRelationMappers.get(operator).apply(-1).getCommand();
+            OpCommand dummyGotoCommand = JvmBytecodeCommandFactory.gotoCommand(-1).getCommand();
+
+            addCommand(reverseRelationMappers.get(operator), getSize(merge(
+                    getCommands(trueBranch),
+                    asList(dummyGotoCommand, dummyOperatorCommand)))
             );
+            trueBranch.forEach(this::addCodeLine);
+
+            addCommand(JvmBytecodeCommandFactory::gotoCommand, getSize(merge(
+                    getCommands(falseBranch),
+                    singletonList(dummyGotoCommand))));
+            falseBranch.forEach(this::addCodeLine);
             return addTypedCommand(JvmBytecodeCommandFactory::storeRegister, registersTable.nextRegister(), TypeRegistry.INTEGER);
         }
         return -1;
-    }
-
-    private void addRelationBlock(String operator, List<CodeLine> trueBranch, List<CodeLine> falseBranch) {
-        OpCommand dummyOperatorCommand = reverseRelationMappers.get(operator).apply(-1).getCommand();
-        OpCommand dummyGotoCommand = JvmBytecodeCommandFactory.gotoCommand(-1).getCommand();
-
-        addCommand(reverseRelationMappers.get(operator), getSize(merge(
-                getCommands(trueBranch),
-                asList(dummyGotoCommand, dummyOperatorCommand)))
-        );
-        trueBranch.forEach(this::addCodeLine);
-
-        addCommand(JvmBytecodeCommandFactory::gotoCommand, getSize(merge(
-                getCommands(falseBranch),
-                singletonList(dummyGotoCommand))));
-        falseBranch.forEach(this::addCodeLine);
     }
 
     private List<OpCommand> getCommands(List<CodeLine> trueBranch) {
@@ -191,7 +185,7 @@ public class JvmBytecodeGenerator {
     }
 
     public int generate(ProcedureStmtNode procedure) {
-        Function<ProcedureStmtNode, Integer> builtInFunction = builtInFunctionsRegistry.lookup(procedure.getIdentifier().getValue());
+        NativeFunction<ProcedureStmtNode> builtInFunction = builtInFunctionsRegistry.lookup(procedure.getIdentifier().getValue());
         return builtInFunction != null ? builtInFunction.apply(procedure) : addVirtualMethodCall(procedure);
     }
 
@@ -210,7 +204,7 @@ public class JvmBytecodeGenerator {
     }
 
     private int addMethodCall(String procedureName, List<Type> argumentTypes) {
-        Function<List<Type>, Integer> function = functionRegistry.lookup(procedureName);
+        NativeFunction<List<Type>> function = functionRegistry.lookup(procedureName);
         if (function == null)
             throw new RuntimeException("Undefined function: " + procedureName);
         return function.apply(argumentTypes);
@@ -255,16 +249,24 @@ public class JvmBytecodeGenerator {
 
     public int generate(IfStmtNode ifStmtNode) {
         addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, ifStmtNode.getCondition());
-        addRelationBlock(
-                "",
-                getLines(ifStmtNode.getTrueBranch()),
-                getLines(ifStmtNode.getFalseBranch())
+        OpCommand dummyOperatorCommand = reverseRelationMappers.get("").apply(-1).getCommand();
+        OpCommand dummyGotoCommand = JvmBytecodeCommandFactory.gotoCommand(-1).getCommand();
+
+        addCommand(reverseRelationMappers.get(""), getSize(merge(
+                getCommands(getLines(ifStmtNode.getTrueBranch())),
+                asList(dummyGotoCommand, dummyOperatorCommand)))
         );
+        ifStmtNode.getTrueBranch().forEach(this::generateCode);
+
+        addCommand(JvmBytecodeCommandFactory::gotoCommand, getSize(merge(
+                getCommands(getLines(ifStmtNode.getFalseBranch())),
+                singletonList(dummyGotoCommand))));
+        ifStmtNode.getFalseBranch().forEach(this::generateCode);
         return -1;
     }
 
     private List<CodeLine> getLines(List<ASTNode> nodes) {
-        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool, registersTable, getCurrentIndex());
+        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool, registersTable, getCurrentIndex()); //todo wtf
         nodes.forEach(generator::generateCode);
         return generator.lines;
     }
@@ -274,7 +276,7 @@ public class JvmBytecodeGenerator {
         int blockSize = getCommandsSize(merge(
                 getLines(repeatStmtNode.getStatements()),
                 getLines(singletonList(repeatStmtNode.getUntilExpression())),
-                singletonList(JvmBytecodeCommandFactory.loadRegister(-1, TypeRegistry.INTEGER))
+                singletonList(dummyLoadRegister())
         ));
         repeatStmtNode.getStatements().forEach(node -> generateCodeInNestedScope(node, blockSize + currentIndex));
         addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, repeatStmtNode.getUntilExpression());
@@ -294,11 +296,68 @@ public class JvmBytecodeGenerator {
     }
 
     int getOffsetToEndOfBlock() {
-        return registersTable.blockEndIndex() - (getCurrentIndex() + codeOffset);
+        return registersTable.blockEndIndex() - (getCurrentIndex() + 1);
     }
 
     ConstantPool getConstantPool() {
         return constantPool;
+    }
+
+    public int generate(ForStmtNode forStmtNode) {
+        int currentIndex = getCurrentIndex();
+        addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, forStmtNode.getInitialValue());
+        int controlVariable = addTypedGeneratedCommand(JvmBytecodeCommandFactory::storeRegister, forStmtNode.getControlVar());
+
+        int blockSize = getCommandsSize(merge(
+                singletonList(JvmBytecodeCommandFactory.ifGreater(-1)),
+                getLines(forStmtNode.getStatements()),
+                asList(
+                        dummyLoadRegister(), //load initial value
+                        dummyLoadRegister(), //load inc value
+                        JvmBytecodeCommandFactory.inc(controlVariable << 4 | (1 << 4)) //increment
+                ),
+                singletonList(gotoCommand(-1)),
+                asList(
+                        dummyLoadRegister(),
+                        dummyLoadRegister(),
+                        dummyStoreRegister(),
+                        dummyStoreRegister()
+                ))
+        );
+
+        addTypedCommand(JvmBytecodeCommandFactory::loadRegister, controlVariable, TypeRegistry.INTEGER);
+        addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, forStmtNode.getFinalValue());
+
+        addCommand(JvmBytecodeCommandFactory::ifGreater, blockSize - getCommandsSize(
+                asList(
+                        dummyLoadRegister(),
+                        dummyLoadRegister(),
+                        dummyStoreRegister(),
+                        dummyStoreRegister()
+                )
+        ));
+
+        int tailSize = getCommandsSize(asList(
+                dummyLoadRegister(),
+                dummyLoadRegister(),
+                dummyStoreRegister(),
+                dummyStoreRegister(),
+                JvmBytecodeCommandFactory.gotoCommand(-1))
+        );
+        forStmtNode.getStatements().forEach(node -> generateCodeInNestedScope(node, blockSize + currentIndex + tailSize));
+
+        addTypedCommand(JvmBytecodeCommandFactory::loadRegister, controlVariable, TypeRegistry.INTEGER);
+        pushInteger(1);
+        addCommand(JvmBytecodeCommandFactory::inc, ((controlVariable & 0xFF) << 8) | (1 & 0xFF));
+        return addCommand(JvmBytecodeCommandFactory::gotoCommand, -1 * blockSize);
+    }
+
+    private CodeLine dummyLoadRegister() {
+        return JvmBytecodeCommandFactory.loadRegister(-1, TypeRegistry.INTEGER);
+    }
+
+    private CodeLine dummyStoreRegister() {
+        return JvmBytecodeCommandFactory.storeRegister(-1, TypeRegistry.INTEGER);
     }
 }
 
