@@ -26,7 +26,7 @@ public class JvmBytecodeGenerator {
     private ConstantPool constantPool;
     private final Map<String, Function<Integer, CodeLine>> reverseRelationMappers = new HashMap<>();
     private final Registry<NativeFunction<ProcedureStmtNode>> builtInFunctionsRegistry = new BuiltInFunctionsRegistry(this);
-    private final Registry<NativeFunction<List<Type>>> stdLibFunctionRegistry = new StdLibFunctionsRegistry(this);
+    private final Registry<NativeFunction<List<Type>>> functionRegistry = new Registry<>();
 
 
     private JvmBytecodeGenerator() {
@@ -38,6 +38,8 @@ public class JvmBytecodeGenerator {
         this.registersTable = registersTable;
 
         registerRelationMappers();
+        functionRegistry.register("write", types -> StdFunctions.printMethod(this, types));
+        functionRegistry.register("writeln", types -> StdFunctions.printLnMethod(this, types));
     }
 
     private void registerRelationMappers() {
@@ -80,13 +82,8 @@ public class JvmBytecodeGenerator {
                 .flatMap(d -> d.getIdentifiers().stream())
                 .forEach(d -> registersTable.register(d.getValue()));
         blockNode.getConstDefinitions().forEach(n -> registersTable.register(n.getValue()));
-        blockNode.getProcOrFunctionDeclarations().forEach(this::registerFunction);
         blockNode.getStatements().forEach(this::generateCode);
         return -1;
-    }
-
-    private void registerFunction(ProcOrFunctionDeclarationNode declaration) {
-        int nameIndex = constantPool.getConstantIndex(declaration.getHeading().getValue(), TypeRegistry.UTF8);
     }
 
     public int generate(AssignmentStatementNode assignment) {
@@ -209,7 +206,7 @@ public class JvmBytecodeGenerator {
     }
 
     private int addMethodCall(String procedureName, List<Type> argumentTypes) {
-        NativeFunction<List<Type>> function = stdLibFunctionRegistry.lookup(procedureName);
+        NativeFunction<List<Type>> function = functionRegistry.lookup(procedureName);
         if (function == null)
             throw new RuntimeException("Undefined function: " + procedureName);
         return function.apply(argumentTypes);
