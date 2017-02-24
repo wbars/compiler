@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 public class ConstantPool {
     private List<ConstantInfo> constants = new ArrayList<>();
     private Map<Type, Function<String, ConstantInfo>> typeConstantMapping = new HashMap<>();
-    private Map<String, Integer> customFunctions = new HashMap<>();
 
     public ConstantPool() {
         registerTypeConstantMapping();
