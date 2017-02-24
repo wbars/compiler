@@ -222,15 +222,13 @@ public class AST {
 
     private static FuncOrProcHeadingNode parseHeading(Node heading) {
         String name = parseLiteral(heading.child(1)).getValue();
-        List<ASTNode> parameters = heading.size() > 2 ? collectRightRecursiveCall(heading.child(2).child(1), node -> parseParameter(node.head())) : emptyList();
+        List<LiteralParameterNode> parameters = heading.size() > 2 ? collectRightRecursiveCall(heading.child(2).child(1), node -> parseParameter(node.head())) : emptyList();
         LiteralNode type = heading.size() > 2 && isToken(heading.last(), Tokens.IDENTIFIER) ? parseLiteral(heading.last()) : null;
         return new FuncOrProcHeadingNode(name, type, parameters);
     }
 
-    private static ASTNode parseParameter(Node parameter) {
-        return hasName(parameter, "procedureHeading") || hasName(parameter, "functionHeading")
-                ? parseHeading(parameter)
-                : new LiteralParameterNode(
+    private static LiteralParameterNode parseParameter(Node parameter) {
+        return new LiteralParameterNode(
                 collectRightRecursiveCall(parameter.firstNonToken(Tokens.VAR).head(), node -> parseLiteral(node.head())),
                 parseLiteral(parameter.head().last())
         );

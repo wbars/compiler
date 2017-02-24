@@ -1,13 +1,9 @@
 program binary_search;
 
-var
-  arr: array[0..8] of Integer;
-  mid,ilow,ihigh,search: Integer;
-  i,n,fi, j: Integer;
-  found: Boolean;
+function sum(x, y: Integer):Integer;
 begin
-  for j := 0 to 10 do begin
-      writeln(j);
-      if j > 5 then break;
-    end;
+    sum := x + y;
+end;
+begin
+  writeln(sum(5,6));
 end.

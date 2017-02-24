@@ -30,7 +30,7 @@ public class Main {
         ProgramNode ast = AST.parseProgram(parse);
         TypeRegistry typeRegistry = new TypeRegistry();
         ast.getProcessedType(typeRegistry);
-        GeneratedCode generatedCode = JvmBytecodeGenerator.generateCode(ast);
+        GeneratedCode generatedCode = JvmBytecodeGenerator.generateCode(ast.getBlock());
         CodeToHexClassFileConverter.toFile(generatedCode, "Main.class");
     }
 

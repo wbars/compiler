@@ -3,6 +3,7 @@ package me.wbars.generator;
 import me.wbars.generator.code.*;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
+import me.wbars.utils.Registry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,6 +21,9 @@ import static java.util.Objects.requireNonNull;
 public class ConstantPool {
     private List<ConstantInfo> constants = new ArrayList<>();
     private Map<Type, Function<String, ConstantInfo>> typeConstantMapping = new HashMap<>();
+    private Registry<GeneratedCode> customFunctionsRegistry = new Registry<>();
+    private final Registry<GeneratedCode> customFunctionCodeRegistry = new Registry<>();
+    private final Registry<NativeFunction<List<Type>>> customFunctionIndexesRegistry = new Registry<>();
 
     public ConstantPool() {
         registerTypeConstantMapping();
@@ -105,5 +109,17 @@ public class ConstantPool {
 
     public List<ConstantInfo> getConstants() {
         return constants;
+    }
+
+    public void registerCustomFunction(String name, GeneratedCode methodCode) {
+        customFunctionsRegistry.register(name, methodCode);
+    }
+
+    public Registry<NativeFunction<List<Type>>> getCustomFunctionIndexesRegistry() {
+        return customFunctionIndexesRegistry;
+    }
+
+    public Registry<GeneratedCode> getCustomFunctionCodeRegistry() {
+        return customFunctionCodeRegistry;
     }
 }
