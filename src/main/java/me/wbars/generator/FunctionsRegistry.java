@@ -7,29 +7,13 @@ import me.wbars.utils.Registry;
 import java.util.List;
 
 public class FunctionsRegistry extends Registry<NativeFunction<List<Type>>> {
-    private final JvmBytecodeGenerator generator;
+    protected JvmBytecodeGenerator generator;
 
     public FunctionsRegistry(JvmBytecodeGenerator generator) {
         this.generator = generator;
-        register("write", this::printMethod);
-        register("writeln", this::printLnMethod);
     }
 
-    private int printMethod(List<Type> argumentTypes) {
-        int outIndex = generator.getConstantPool().getFieldOrMethodIndex("java/lang/System.out", "Ljava/io/PrintStream;");
-        int printIndex = generator.getConstantPool().getFieldOrMethodIndex("java/io/PrintStream.print", getTypeDescriptor(argumentTypes, TypeRegistry.VOID));
-        generator.addCommand(JvmBytecodeCommandFactory::getStatic, outIndex);
-        return printIndex;
-    }
-
-    private int printLnMethod(List<Type> argumentTypes) {
-        int outIndex = generator.getConstantPool().getFieldOrMethodIndex("java/lang/System.out", "Ljava/io/PrintStream;");
-        int printIndex = generator.getConstantPool().getFieldOrMethodIndex("java/io/PrintStream.println", getTypeDescriptor(argumentTypes, TypeRegistry.VOID));
-        generator.addCommand(JvmBytecodeCommandFactory::getStatic, outIndex);
-        return printIndex;
-    }
-
-    private static String getTypeDescriptor(List<Type> argumentTypes, Type resultType) {
+    static String getTypeDescriptor(List<Type> argumentTypes, Type resultType) {
         String argumentsDescriptor = argumentTypes.stream()
                 .map(FunctionsRegistry::getTypeAlias)
                 .reduce((c, c2) -> c + c2).orElse("");

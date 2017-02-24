@@ -26,14 +26,14 @@ public class JvmBytecodeGenerator {
     private ConstantPool constantPool;
     private final Map<String, Function<Integer, CodeLine>> reverseRelationMappers = new HashMap<>();
     private final Registry<NativeFunction<ProcedureStmtNode>> builtInFunctionsRegistry = new BuiltInFunctionsRegistry(this);
-    private final Registry<NativeFunction<List<Type>>> functionRegistry = new FunctionsRegistry(this);
+    private final Registry<NativeFunction<List<Type>>> stdLibFunctionRegistry = new StdLibFunctionsRegistry(this);
 
 
     private JvmBytecodeGenerator() {
-        this(new ConstantPool(), new RegistersTable(null, -1), 0);
+        this(new ConstantPool(), new RegistersTable(null, -1));
     }
 
-    private JvmBytecodeGenerator(ConstantPool constantPool, RegistersTable registersTable, int codeOffset) {
+    private JvmBytecodeGenerator(ConstantPool constantPool, RegistersTable registersTable) {
         this.constantPool = constantPool;
         this.registersTable = registersTable;
 
@@ -80,8 +80,13 @@ public class JvmBytecodeGenerator {
                 .flatMap(d -> d.getIdentifiers().stream())
                 .forEach(d -> registersTable.register(d.getValue()));
         blockNode.getConstDefinitions().forEach(n -> registersTable.register(n.getValue()));
+        blockNode.getProcOrFunctionDeclarations().forEach(this::registerFunction);
         blockNode.getStatements().forEach(this::generateCode);
         return -1;
+    }
+
+    private void registerFunction(ProcOrFunctionDeclarationNode declaration) {
+        int nameIndex = constantPool.getConstantIndex(declaration.getHeading().getValue(), TypeRegistry.UTF8);
     }
 
     public int generate(AssignmentStatementNode assignment) {
@@ -204,7 +209,7 @@ public class JvmBytecodeGenerator {
     }
 
     private int addMethodCall(String procedureName, List<Type> argumentTypes) {
-        NativeFunction<List<Type>> function = functionRegistry.lookup(procedureName);
+        NativeFunction<List<Type>> function = stdLibFunctionRegistry.lookup(procedureName);
         if (function == null)
             throw new RuntimeException("Undefined function: " + procedureName);
         return function.apply(argumentTypes);
@@ -266,7 +271,7 @@ public class JvmBytecodeGenerator {
     }
 
     private List<CodeLine> getLines(List<ASTNode> nodes) {
-        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool, registersTable, getCurrentIndex()); //todo wtf
+        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool, registersTable); //todo wtf
         nodes.forEach(generator::generateCode);
         return generator.lines;
     }
