@@ -13,4 +13,8 @@ public class CollectionsUtils {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
     }
+
+    public static <T> T last(List<T> list) {
+        return list.isEmpty() ? null : list.get(list.size() - 1);
+    }
 }

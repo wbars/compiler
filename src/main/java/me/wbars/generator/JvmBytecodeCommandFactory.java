@@ -92,8 +92,12 @@ public class JvmBytecodeCommandFactory {
         return CodeLine.line(OpCommand.INVOKEVIRTUAL, index);
     }
 
-    public static CodeLine returnCommand(Integer ignored) {
+    public static CodeLine returnCommand() {
         return CodeLine.line(OpCommand.RETURN);
+    }
+
+    public static CodeLine returnCommand(Type type) {
+        return CodeLine.line(typedCommand(type, "return"));
     }
 
     public static CodeLine invokeSpecial(Integer index) {

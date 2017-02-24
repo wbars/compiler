@@ -272,6 +272,7 @@ public class Parser {
         if (tryAddNode(stmt, this::whileStmt, Tokens.WHILE)) return stmt;
         if (tryAddNode(stmt, this::fortStmt, Tokens.FOR)) return stmt;
         if (tryAddNode(stmt, this::ifStmt, Tokens.IF)) return stmt;
+        if (tryAddNode(stmt, this::returnStmt, Tokens.RETURN)) return stmt;
 
 
         if (isCurrentTokenHasPos(Tokens.IDENTIFIER)) {
@@ -358,6 +359,13 @@ public class Parser {
         if (!tryAddToken(actualParam, Tokens.COLON)) return actualParam;
         actualParam.addChildren(derivate(this::expr));
         return actualParam;
+    }
+
+    private Node returnStmt() {
+        Node stmt = Node.empty("returnStmt");
+        stmt.addChildren(tokenByType(Tokens.RETURN));
+        if (!isCurrentTokenHasPos(Tokens.SEMICOLON)) stmt.addChildren(derivate(this::expr));
+        return stmt;
     }
 
     private Node ifStmt() {

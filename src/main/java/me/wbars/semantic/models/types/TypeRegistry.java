@@ -2,6 +2,7 @@ package me.wbars.semantic.models.types;
 
 import me.wbars.parser.models.Tokens;
 import me.wbars.scanner.models.Token;
+import me.wbars.semantic.ReturnStmtNode;
 import me.wbars.semantic.models.*;
 import me.wbars.utils.Registry;
 
@@ -324,5 +325,9 @@ public class TypeRegistry extends Registry<Type> {
         getProcessedType(repeatStmtNode.getUntilExpression());
         repeatStmtNode.getStatements().forEach(this::getProcessedType);
         return VOID;
+    }
+
+    public Type processType(ReturnStmtNode returnStmtNode) {
+        return returnStmtNode.getExpr() != null ? returnStmtNode.getExpr().getProcessedType(this) : VOID;
     }
 }

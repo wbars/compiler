@@ -34,7 +34,7 @@ public class BytecodeFunctionsUtils {
         return methodIndex;
     }
 
-    static String getTypeDescriptor(List<Type> argumentTypes, Type resultType) {
+    private static String getTypeDescriptor(List<Type> argumentTypes, Type resultType) {
         String argumentsDescriptor = argumentTypes.stream()
                 .map(BytecodeFunctionsUtils::getTypeAlias)
                 .reduce((c, c2) -> c + c2).orElse("");

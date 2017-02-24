@@ -2,7 +2,7 @@ program binary_search;
 
 function sum(x, y: Integer):Integer;
 begin
-    sum := x + y;
+    return (x + y);
 end;
 begin
   writeln(sum(5,6));

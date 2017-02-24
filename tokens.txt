@@ -55,6 +55,7 @@ DIRECTION TO|DOWNTO|to|downto
 ASSIGNMENT :=
 RELOP =|!=|>|<|>=|<=
 UPARROW ^
+RETURN return
 
 BOOLEAN true|false
 IDENTIFIER (\w)((\w|\d)*)

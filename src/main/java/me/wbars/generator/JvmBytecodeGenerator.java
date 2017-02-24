@@ -1,6 +1,7 @@
 package me.wbars.generator;
 
 import me.wbars.generator.code.GeneratedCode;
+import me.wbars.semantic.ReturnStmtNode;
 import me.wbars.semantic.models.*;
 import me.wbars.semantic.models.types.ArrayType;
 import me.wbars.semantic.models.types.Type;
@@ -66,7 +67,7 @@ public class JvmBytecodeGenerator {
     }
 
     private static GeneratedCode stateSnapshot(JvmBytecodeGenerator generator) {
-        return new GeneratedCode(merge(generator.lines, singletonList(JvmBytecodeCommandFactory.returnCommand(-1))), generator.constantPool);
+        return new GeneratedCode(generator.lines, generator.constantPool);
     }
 
     private int generateCodeInNestedScope(ASTNode node, int forBlockEnd) {
@@ -274,7 +275,7 @@ public class JvmBytecodeGenerator {
     }
 
     private List<CodeLine> getLines(List<ASTNode> nodes) {
-        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool, registersTable); //todo wtf
+        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool, registersTable);
         nodes.forEach(generator::generateCode);
         return generator.lines;
     }
@@ -366,6 +367,16 @@ public class JvmBytecodeGenerator {
 
     private CodeLine dummyStoreRegister() {
         return JvmBytecodeCommandFactory.storeRegister(-1, TypeRegistry.INTEGER);
+    }
+
+    public int generate(ReturnStmtNode returnStmtNode) {
+        if (returnStmtNode.getExpr() == null) {
+            addCodeLine(JvmBytecodeCommandFactory.returnCommand());
+        } else {
+            addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, returnStmtNode.getExpr());
+            addCodeLine(JvmBytecodeCommandFactory.returnCommand(returnStmtNode.getExpr().getType()));
+        }
+        return -1;
     }
 }
 

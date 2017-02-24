@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static java.util.Collections.emptyList;
+import static me.wbars.utils.CollectionsUtils.last;
 
 public class AST {
     private static ExprNode parseExpr(Node expr) {
@@ -144,6 +145,10 @@ public class AST {
         addPart(block, "funcOrProcDeclaration", blockNode.getProcOrFunctionDeclarations(), node -> parseProcOrFunc(node.head()));
         if (block.size() > 0) blockNode.getStatements().addAll(parseStmtSeq(block.last()));
 
+        if (!(last(blockNode.getStatements()) instanceof ReturnStmtNode)) {
+            blockNode.getStatements().add(new ReturnStmtNode(null));
+        }
+
         return blockNode;
     }
 
@@ -172,6 +177,10 @@ public class AST {
                     parseExpr(head.child(1)),
                     parseStatement(head.child(3))
             );
+        }
+
+        if (hasName(head, "returnStmt")) {
+            return new ReturnStmtNode(parseExpr(head.size() > 1 ? head.child(1) : null));
         }
 
         if (hasName(head, "forStmt")) {

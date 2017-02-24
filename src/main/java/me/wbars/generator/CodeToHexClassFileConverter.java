@@ -101,7 +101,7 @@ public class CodeToHexClassFileConverter {
         List<Byte> codeLinesBytes = generateBytecode(asList(
                 JvmBytecodeCommandFactory.loadRegister(0, TypeRegistry.STRING),
                 JvmBytecodeCommandFactory.invokeSpecial(code.getConstantPool().getFieldOrMethodIndex("java/lang/Object.<init>", "()V")),
-                JvmBytecodeCommandFactory.returnCommand(-1)
+                JvmBytecodeCommandFactory.returnCommand()
         ));
         List<Byte> bodyBytes = flatten(asList(
                 BOOTSTRAP_METHOD_MAX_STACK,
