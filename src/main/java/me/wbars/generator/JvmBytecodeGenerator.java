@@ -352,12 +352,7 @@ public class JvmBytecodeGenerator {
                         JvmBytecodeCommandFactory.inc(controlVariable << 4 | (1 << 4)) //increment
                 ),
                 singletonList(gotoCommand(-1)),
-                asList(
-                        dummyLoadRegister(),
-                        dummyLoadRegister(),
-                        dummyStoreRegister(),
-                        dummyStoreRegister()
-                ))
+                singletonList(dummyLoadRegister()))
         );
 
         int finalValueIndex = addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, forStmtNode.getFinalValue());
@@ -365,14 +360,7 @@ public class JvmBytecodeGenerator {
         addTypedCommand(JvmBytecodeCommandFactory::loadRegister, controlVariable, TypeRegistry.INTEGER);
         addTypedCommand(JvmBytecodeCommandFactory::loadRegister, finalValueIndex, TypeRegistry.INTEGER);
 
-        addCommand(JvmBytecodeCommandFactory::ifGreater, blockSize - getCommandsSize(
-                asList(
-                        dummyLoadRegister(),
-                        dummyLoadRegister(),
-                        dummyStoreRegister(),
-                        dummyStoreRegister()
-                )
-        ));
+        addCommand(JvmBytecodeCommandFactory::ifGreater, blockSize - getCommandsSize(singletonList(dummyLoadRegister())));
 
         int tailSize = getCommandsSize(asList(
                 dummyLoadRegister(),
