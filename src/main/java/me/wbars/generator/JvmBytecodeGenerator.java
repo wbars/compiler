@@ -225,6 +225,7 @@ public class JvmBytecodeGenerator {
 
         if (isCustom(methodName)) {
             addCommand(JvmBytecodeCommandFactory::invokeStatic, register);
+            if (procedureStmtNode.getType() == TypeRegistry.VOID) return -1;
             return addTypedCommand(JvmBytecodeCommandFactory::storeRegister, registersTable.nextRegister(), TypeRegistry.INTEGER);
         }
 
