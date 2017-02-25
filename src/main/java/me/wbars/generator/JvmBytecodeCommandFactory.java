@@ -30,6 +30,8 @@ public class JvmBytecodeCommandFactory {
         if (mnemonic.equals("ldc_w")) {
             return type == TypeRegistry.DOUBLE || type == TypeRegistry.LONG ? OpCommand.LDC2_W : OpCommand.LDC_W;
         }
+//        if (mnemonic.equals("load") &&type instanceof ArrayType) return OpCommand.AALOAD;
+//        if (mnemonic.equals("store") &&type instanceof ArrayType) return OpCommand.AASTORE;
 
         return OpCommand.fromMnemonic(getTypePrefix(type) + mnemonic);
     }

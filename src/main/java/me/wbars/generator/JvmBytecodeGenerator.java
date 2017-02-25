@@ -22,6 +22,10 @@ import static me.wbars.generator.JvmBytecodeCommandFactory.*;
 import static me.wbars.utils.CollectionsUtils.merge;
 
 public class JvmBytecodeGenerator {
+    public RegistersTable getRegistersTable() {
+        return registersTable;
+    }
+
     private RegistersTable registersTable;
     private final List<CodeLine> lines = new ArrayList<>();
     private ConstantPool constantPool;
@@ -70,8 +74,8 @@ public class JvmBytecodeGenerator {
         return stateSnapshot(generator);
     }
 
-    public static GeneratedCode generateCode(BlockNode blockNode, ConstantPool constantPool) {
-        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool);
+    public static GeneratedCode generateCode(BlockNode blockNode, ConstantPool constantPool, RegistersTable registerTable) {
+        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool, registerTable);
         blockNode.generateCode(generator);
         return stateSnapshot(generator);
     }
@@ -188,7 +192,7 @@ public class JvmBytecodeGenerator {
         return register;
     }
 
-    private int addTypedCommand(BiFunction<Integer, Type, CodeLine> factoryMethod, Integer register, Type type) {
+    public int addTypedCommand(BiFunction<Integer, Type, CodeLine> factoryMethod, Integer register, Type type) {
         addCodeLine(factoryMethod.apply(register, type));
         return register;
     }
@@ -249,7 +253,8 @@ public class JvmBytecodeGenerator {
             addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, item);
             addCodeLine(arrayElementStore(item.getType()));
         }
-        return storeInNextRegister(arrayLiteralNode.getType());
+        return addTypedCommand(JvmBytecodeCommandFactory::storeRegister, registersTable.lookupOrRegister(arrayLiteralNode.getValue()), arrayLiteralNode.getType());
+
     }
 
     private void pushInteger(int value) {
@@ -354,8 +359,10 @@ public class JvmBytecodeGenerator {
                 ))
         );
 
+        int finalValueIndex = addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, forStmtNode.getFinalValue());
+
         addTypedCommand(JvmBytecodeCommandFactory::loadRegister, controlVariable, TypeRegistry.INTEGER);
-        addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, forStmtNode.getFinalValue());
+        addTypedCommand(JvmBytecodeCommandFactory::loadRegister, finalValueIndex, TypeRegistry.INTEGER);
 
         addCommand(JvmBytecodeCommandFactory::ifGreater, blockSize - getCommandsSize(
                 asList(

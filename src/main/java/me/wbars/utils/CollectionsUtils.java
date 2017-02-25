@@ -17,4 +17,7 @@ public class CollectionsUtils {
     public static <T> T last(List<T> list) {
         return list.isEmpty() ? null : list.get(list.size() - 1);
     }
+    public static <T> T first(List<T> list) {
+        return list.isEmpty() ? null : list.get(0);
+    }
 }

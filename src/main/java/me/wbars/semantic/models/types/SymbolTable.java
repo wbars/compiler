@@ -13,7 +13,7 @@ public class SymbolTable extends Registry<Type> {
 
     @Override
     public void register(String literal, Type type) {
-        if (lookup(literal) != null) throw new RuntimeException();
+//        if (lookup(literal) != null) throw new RuntimeException(); todo enable this to prevent overriding things
         super.register(literal, type);
     }
 

@@ -1,6 +1,8 @@
 package me.wbars.generator;
 
+import me.wbars.semantic.models.LiteralNode;
 import me.wbars.semantic.models.ProcOrFunctionDeclarationNode;
+import me.wbars.semantic.models.types.ArrayType;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
@@ -42,7 +44,12 @@ public class BytecodeFunctionsUtils {
         if (type == TypeRegistry.BOOLEAN) return "Z";
         if (type == TypeRegistry.LONG) return "J";
         if (type == TypeRegistry.STRING) return "Ljava/lang/String;";
+        if (type instanceof ArrayType) return getArrayTypeAlias((ArrayType) type);
         return String.valueOf(type.name().toUpperCase().charAt(0));
+    }
+
+    private static String getArrayTypeAlias(ArrayType type) {
+        return "[" + getTypeAlias(type.getType());
     }
 
     public static int registerMethod(JvmBytecodeGenerator generator, ProcOrFunctionDeclarationNode declaration) {
@@ -51,10 +58,16 @@ public class BytecodeFunctionsUtils {
                 .collect(Collectors.toList());
 
         String name = declaration.getHeading().getValue();
-        String typeDescriptor = getTypeDescriptor(paramTypes, declaration.getHeading().getResultType().getType());
+        LiteralNode resultType = declaration.getHeading().getResultType();
+        String typeDescriptor = getTypeDescriptor(paramTypes, resultType != null ? resultType.getType() : TypeRegistry.VOID);
         generator.getConstantPool().getCustomFunctionDescriptorRegistry().register(name, typeDescriptor);
         generator.getConstantPool().getCustomFunctionIndexesRegistry().register(name, types -> BytecodeFunctionsUtils.customMethod(generator, name, typeDescriptor));
-        generator.getConstantPool().getCustomFunctionCodeRegistry().register(name, JvmBytecodeGenerator.generateCode(declaration.getBody(), generator.getConstantPool()));
+
+        RegistersTable registerTable = new RegistersTable(null, 0);
+        declaration.getHeading().getParameters().stream()
+                .flatMap(literalParameterNode -> literalParameterNode.getIdentifiers().stream())
+                .forEach(l -> registerTable.register(l.getValue()));
+        generator.getConstantPool().getCustomFunctionCodeRegistry().register(name, JvmBytecodeGenerator.generateCode(declaration.getBody(), generator.getConstantPool(), registerTable));
 
         return generator.getConstantPool().getFieldOrMethodIndex("Main." + name, typeDescriptor);
     }

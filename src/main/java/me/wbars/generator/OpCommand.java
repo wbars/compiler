@@ -47,7 +47,9 @@ public enum OpCommand {
 
     IRETURN(0xac),
 
-    INVOKESTATIC(0xb8, 2);
+    INVOKESTATIC(0xb8, 2),
+    AALOAD(0x32),
+    AASTORE(0x53);
 
     private final String mnemonic;
     private final int code;

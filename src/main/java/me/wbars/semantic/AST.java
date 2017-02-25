@@ -141,7 +141,7 @@ public class AST {
 
         addPart(block, "labelDeclaration", blockNode.getLabels(), node -> new LiteralNode(parseVarAccess(node).getValue(), TypeRegistry.STRING));
         addPart(block, "constDeclaration", blockNode.getConstDefinitions(), AST::parseConstDefinition);
-        addPart(block, "typeDeclaration", blockNode.getTypeDefinitions(), node -> parseTypeDefinition(parseVarAccess(node.head()).getValue(), node.head().child(2)));
+        addPart(block, "typeDeclaration", blockNode.getTypeDefinitions(), node -> parseTypeDefinition(parseVarAccess(node.head()).getValue(), node.child(2)));
         addPart(block, "varDeclarationPart", blockNode.getVarDeclarations(), AST::parseVarDeclaration);
         addPart(block, "funcOrProcDeclaration", blockNode.getProcOrFunctionDeclarations(), AST::parseProcOrFunc);
         if (block.size() > 0) blockNode.getStatements().addAll(parseStmtSeq(block.last()));

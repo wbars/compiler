@@ -1,10 +1,16 @@
 program binary_search;
+type arr = array[0..4] of Integer;
+var a: arr;
 
-function fac(n: Integer):Integer;
+procedure swap(i,j: Integer; a: arr);
+var tmp: Integer;
 begin
-    if n = 0 then return 1
-    else return (n * fac(n - 1))
+    tmp := a[i];
+    array_push(a[j], i, a);
+    array_push(tmp, j, a);
 end;
+
 begin
-  writeln(fac(5));
+a := {11,22,33,44,55};
+for i := 0 to (len(a) - 1) do writeln(a[i]);
 end.

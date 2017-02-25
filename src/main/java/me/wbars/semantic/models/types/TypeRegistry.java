@@ -283,9 +283,7 @@ public class TypeRegistry extends Registry<Type> {
 
     public Type processType(LiteralParameterNode parameterNode) {
         Type type = getProcessedType(parameterNode.getNameIdentifier());
-        parameterNode.getIdentifiers().forEach(literalNode -> {
-            table.register(literalNode.getValue(), type);
-        });
+        parameterNode.getIdentifiers().forEach(literalNode -> table.register(literalNode.getValue(), type));
         return type;
     }
 

@@ -14,6 +14,19 @@ public class BuiltInFunctionsRegistry extends Registry<NativeFunction<ProcedureS
 
         register("len", this::lenFunc);
         register("break", ignored -> breakFunc());
+        register("array_push", this::arrayPush);
+    }
+
+    private Integer arrayPush(ProcedureStmtNode procedureStmtNode) {
+        ActualParameterNode value = procedureStmtNode.getArguments().get(0);
+        ActualParameterNode index = procedureStmtNode.getArguments().get(1);
+        ActualParameterNode arrayRef = procedureStmtNode.getArguments().get(2);
+
+        generator.addTypedCommand(JvmBytecodeCommandFactory::loadRegister, generator.getRegistersTable().lookupOrRegister(arrayRef.getValue()), arrayRef.getType());
+        generator.addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, index);
+        generator.addTypedGeneratedCommand(JvmBytecodeCommandFactory::loadRegister, value);
+        generator.addCodeLine(JvmBytecodeCommandFactory.arrayElementStore(value.getFirst().getType()));
+        return -1;
     }
 
     private int lenFunc(ProcedureStmtNode procedureStmtNode) {
