@@ -155,4 +155,8 @@ public class JvmBytecodeCommandFactory {
     public static CodeLine inc(Integer argument /** todo rename **/) {
         return CodeLine.line(OpCommand.INC, argument);
     }
+
+    public static CodeLine invokeStatic(Integer methodIndex) {
+        return CodeLine.line(OpCommand.INVOKESTATIC, methodIndex);
+    }
 }

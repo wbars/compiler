@@ -28,10 +28,7 @@ public class BytecodeFunctionsUtils {
     }
 
     public static int customMethod(JvmBytecodeGenerator generator, String name, String typeDescriptor) {
-        int mainClassIndex = generator.getConstantPool().getClass("Main");
-        int methodIndex = generator.getConstantPool().getFieldOrMethodIndex("Main." + name, typeDescriptor);
-        generator.addCommand(JvmBytecodeCommandFactory::getStatic, mainClassIndex);
-        return methodIndex;
+        return generator.getConstantPool().getFieldOrMethodIndex("Main." + name, typeDescriptor);
     }
 
     private static String getTypeDescriptor(List<Type> argumentTypes, Type resultType) {
@@ -52,10 +49,13 @@ public class BytecodeFunctionsUtils {
         List<Type> paramTypes = declaration.getHeading().getParameters().stream()
                 .flatMap(parameter -> replicate(parameter.getNameIdentifier().getType(), parameter.getIdentifiers().size()))
                 .collect(Collectors.toList());
+
         String name = declaration.getHeading().getValue();
-        generator.getConstantPool().getCustomFunctionCodeRegistry().register(name, JvmBytecodeGenerator.generateCode(declaration.getBody()));
         String typeDescriptor = getTypeDescriptor(paramTypes, declaration.getHeading().getResultType().getType());
+        generator.getConstantPool().getCustomFunctionDescriptorRegistry().register(name, typeDescriptor);
         generator.getConstantPool().getCustomFunctionIndexesRegistry().register(name, types -> BytecodeFunctionsUtils.customMethod(generator, name, typeDescriptor));
+        generator.getConstantPool().getCustomFunctionCodeRegistry().register(name, JvmBytecodeGenerator.generateCode(declaration.getBody(), generator.getConstantPool()));
+
         return generator.getConstantPool().getFieldOrMethodIndex("Main." + name, typeDescriptor);
     }
 

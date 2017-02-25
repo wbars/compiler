@@ -42,6 +42,10 @@ public class JvmBytecodeGenerator {
         registerStdLibFunctions();
     }
 
+    public JvmBytecodeGenerator(ConstantPool constantPool) {
+        this(constantPool, new RegistersTable(null, -1));
+    }
+
     private void registerStdLibFunctions() {
         stdFunctionRegistry.register("write", types -> BytecodeFunctionsUtils.printMethod(this, types));
         stdFunctionRegistry.register("writeln", types -> BytecodeFunctionsUtils.printLnMethod(this, types));
@@ -62,6 +66,12 @@ public class JvmBytecodeGenerator {
 
     public static GeneratedCode generateCode(BlockNode blockNode) {
         JvmBytecodeGenerator generator = new JvmBytecodeGenerator();
+        blockNode.generateCode(generator);
+        return stateSnapshot(generator);
+    }
+
+    public static GeneratedCode generateCode(BlockNode blockNode, ConstantPool constantPool) {
+        JvmBytecodeGenerator generator = new JvmBytecodeGenerator(constantPool);
         blockNode.generateCode(generator);
         return stateSnapshot(generator);
     }
@@ -194,24 +204,34 @@ public class JvmBytecodeGenerator {
 
     public int generate(ProcedureStmtNode procedure) {
         NativeFunction<ProcedureStmtNode> builtInFunction = builtInFunctionsRegistry.lookup(procedure.getIdentifier().getValue());
-        return builtInFunction != null ? builtInFunction.apply(procedure) : addVirtualMethodCall(procedure);
+        return builtInFunction != null ? builtInFunction.apply(procedure) : addMethodCall(procedure);
     }
 
-    private int addVirtualMethodCall(ProcedureStmtNode procedureStmtNode) {
+    private int addMethodCall(ProcedureStmtNode procedureStmtNode) {
         List<Type> argumentTypes = procedureStmtNode.getArguments().stream()
                 .map(ActualParameterNode::getType)
                 .collect(Collectors.toList());
 
-        int register = addMethodCall(procedureStmtNode.getIdentifier().getValue(), argumentTypes);
+        String methodName = procedureStmtNode.getIdentifier().getValue();
+        int register = getMethodCall(methodName, argumentTypes);
         procedureStmtNode.getArguments().forEach(p -> addTypedGeneratedCommand(
                 JvmBytecodeCommandFactory::loadRegister,
                 p.getFirst())
         );
 
+        if (isCustom(methodName)) {
+            addCommand(JvmBytecodeCommandFactory::invokeStatic, register);
+            return addTypedCommand(JvmBytecodeCommandFactory::storeRegister, registersTable.nextRegister(), TypeRegistry.INTEGER);
+        }
+
         return addCommand(JvmBytecodeCommandFactory::invokeVirtual, register);
     }
 
-    private int addMethodCall(String procedureName, List<Type> argumentTypes) {
+    private boolean isCustom(String methodName) {
+        return constantPool.getCustomFunctionIndexesRegistry().lookup(methodName) != null;
+    }
+
+    private int getMethodCall(String procedureName, List<Type> argumentTypes) {
         NativeFunction<List<Type>> function = stdFunctionRegistry.lookup(procedureName);
         if (function == null) function = constantPool.getCustomFunctionIndexesRegistry().lookup(procedureName);
         if (function == null)

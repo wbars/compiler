@@ -87,16 +87,16 @@ public class Parser {
         return current != null && current.getValue().equals(value);
     }
 
-    private Supplier<Node> createRightRecursiveListSupplier(String name,
-                                                            Supplier<Node> listItem,
-                                                            String delimer) {
+    private NamedSupplier<Node> createRightRecursiveListSupplier(String name,
+                                                                 Supplier<Node> listItem,
+                                                                 String delimer) {
         return createRightRecursiveListSupplier(name, listItem, delimer, () -> false);
     }
 
-    private Supplier<Node> createRightRecursiveListSupplier(String name,
-                                                            Supplier<Node> listItem,
-                                                            String delimer,
-                                                            Supplier<Boolean> breakCondition) {
+    private NamedSupplier<Node> createRightRecursiveListSupplier(String name,
+                                                                 Supplier<Node> listItem,
+                                                                 String delimer,
+                                                                 Supplier<Boolean> breakCondition) {
         Supplier<Node> recursiveCall = new Supplier<Node>() {
             @Override
             public Node get() {
@@ -109,16 +109,29 @@ public class Parser {
             }
         };
 
-        return () -> {
-            Node node = Node.empty(name);
-            node.addChildren(derivate(listItem));
-            node.addChildren(derivate(recursiveCall));
-            return node;
+        return new NamedSupplier<Node>() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public Node get() {
+                Node node = Node.empty(name);
+                node.addChildren(derivate(listItem));
+                node.addChildren(derivate(recursiveCall));
+                return node;
+            }
         };
     }
 
-    private Supplier<Node> createListSupplier(String name, Supplier<Node> listItem, Supplier<Boolean> breakCondition) {
-        return new Supplier<Node>() {
+    private NamedSupplier<Node> createListSupplier(String name, Supplier<Node> listItem, Supplier<Boolean> breakCondition) {
+        return new NamedSupplier<Node>() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
             @Override
             public Node get() {
                 Node node = Node.empty(name);
@@ -131,35 +144,42 @@ public class Parser {
         };
     }
 
-    private final Supplier<Node> indexList = createRightRecursiveListSupplier("indexList", this::ordinalType, Tokens.COMMA);
-    private final Supplier<Node> term = createRightRecursiveListSupplier("term", this::factor, Tokens.SIGN,
+    private final NamedSupplier<Node> expr = new NamedSupplier<Node>() {
+        @Override
+        public String getName() {
+            return "expr";
+        }
+
+        @Override
+        public Node get() {
+            Node expr = Node.empty("expr");
+            expr.addChildren(derivate(simpleExpr));
+            if (!isCurrentTokenHasPos(Tokens.RELOP)) return expr;
+
+            expr.addChildren(tokenByType(Tokens.RELOP));
+            expr.addChildren(derivate(simpleExpr));
+            return expr;
+        }
+    };
+    private final NamedSupplier<Node> indexList = createRightRecursiveListSupplier("indexList", this::ordinalType, Tokens.COMMA);
+    private final NamedSupplier<Node> term = createRightRecursiveListSupplier("term", this::factor, Tokens.SIGN,
             () -> !isCurrentTokenHasValue("*") && !isCurrentTokenHasValue("/") && !isCurrentTokenHasValue("&&"));
-    private final Supplier<Node> simpleExpr = createRightRecursiveListSupplier("simpleExpr", term, Tokens.SIGN,
+    private final NamedSupplier<Node> simpleExpr = createRightRecursiveListSupplier("simpleExpr", term, Tokens.SIGN,
             () -> !isCurrentTokenHasValue("+") && !isCurrentTokenHasValue("-") && !isCurrentTokenHasValue("||"));
-    private final Supplier<Node> labelList = createRightRecursiveListSupplier("labelList", () -> tokenByType(Tokens.UNSIGNED_INTEGER), Tokens.COMMA);
-    private final Supplier<Node> actualParamList = createRightRecursiveListSupplier("actualParamList", this::actualParam, Tokens.COMMA);
-    private final Supplier<Node> formalParameterSectionList = createRightRecursiveListSupplier("formalParameterSectionList", this::formalParameterSection, Tokens.SEMICOLON);
-    private final Supplier<Node> identifierList = createRightRecursiveListSupplier("identifierList", () -> tokenByType(Tokens.IDENTIFIER), Tokens.COMMA);
-    private final Supplier<Node> variantList = createRightRecursiveListSupplier("variantList", this::variant, Tokens.SEMICOLON);
-    private final Supplier<Node> caseConstantList = createRightRecursiveListSupplier("caseConstantList", this::caseConstant, Tokens.COMMA);
-    private final Supplier<Node> recordSectionList = createListSupplier("recordSectionList", this::recordSection, () -> isCurrentTokenHasPos(Tokens.END));
-    private final Supplier<Node> indexExprList = createRightRecursiveListSupplier("indexExprList", this::expr, Tokens.COMMA);
-    private final Supplier<Node> arrayLiteralElementsList = createRightRecursiveListSupplier("arrayLiteralElementsList", this::expr, Tokens.COMMA);
-
-    private Node expr() {
-        Node expr = Node.empty("expr");
-        expr.addChildren(derivate(simpleExpr));
-        if (!isCurrentTokenHasPos(Tokens.RELOP)) return expr;
-
-        expr.addChildren(tokenByType(Tokens.RELOP));
-        expr.addChildren(derivate(simpleExpr));
-        return expr;
-    }
+    private final NamedSupplier<Node> labelList = createRightRecursiveListSupplier("labelList", () -> tokenByType(Tokens.UNSIGNED_INTEGER), Tokens.COMMA);
+    private final NamedSupplier<Node> actualParamList = createRightRecursiveListSupplier("actualParamList", this::actualParam, Tokens.COMMA);
+    private final NamedSupplier<Node> formalParameterSectionList = createRightRecursiveListSupplier("formalParameterSectionList", this::formalParameterSection, Tokens.SEMICOLON);
+    private final NamedSupplier<Node> identifierList = createRightRecursiveListSupplier("identifierList", () -> tokenByType(Tokens.IDENTIFIER), Tokens.COMMA);
+    private final NamedSupplier<Node> variantList = createRightRecursiveListSupplier("variantList", this::variant, Tokens.SEMICOLON);
+    private final NamedSupplier<Node> caseConstantList = createRightRecursiveListSupplier("caseConstantList", this::caseConstant, Tokens.COMMA);
+    private final NamedSupplier<Node> recordSectionList = createListSupplier("recordSectionList", this::recordSection, () -> isCurrentTokenHasPos(Tokens.END));
+    private final NamedSupplier<Node> indexExprList = createRightRecursiveListSupplier("indexExprList", expr, Tokens.COMMA);
+    private final NamedSupplier<Node> arrayLiteralElementsList = createRightRecursiveListSupplier("arrayLiteralElementsList", expr, Tokens.COMMA);
 
     private Node factor() {
         Node factor = Node.empty("Factor");
         if (isCurrentTokenHasPos(Tokens.OPEN_PAREN)) {
-            addParensDerivate(factor, this::expr);
+            addParensDerivate(factor, expr);
             return factor;
         }
         if (isCurrentTokenHasPos(Tokens.OPEN_CURLY)) return addArrayLiteral();
@@ -172,9 +192,7 @@ public class Parser {
         if (isCurrentTokenHasPos(Tokens.IDENTIFIER)) {
             factor.addChildren(derivate(this::varAccess));
             if (isCurrentTokenHasPos(Tokens.OPEN_PAREN)) {
-                factor.addChildren(tokenByType(Tokens.OPEN_PAREN));
-                factor.addChildren(derivate(actualParamList));
-                factor.addChildren(tokenByType(Tokens.CLOSE_PAREN));
+                addParensDerivate(factor, actualParamList);
             }
             return factor;
         }
@@ -203,9 +221,13 @@ public class Parser {
         return tryAddNode(node, () -> tokenByType(partOfSpeech), partOfSpeech);
     }
 
-    private void addParensDerivate(Node node, Supplier<Node> supplier) {
+    private void addParensDerivate(Node node, NamedSupplier<Node> supplier) {
         node.addChildren(tokenByType(Tokens.OPEN_PAREN));
-        node.addChildren(derivate(supplier));
+        if (isCurrentTokenHasPos(Tokens.CLOSE_PAREN)) {
+            node.addChildren(Node.empty(supplier.getName()));
+        } else {
+            node.addChildren(derivate(supplier));
+        }
         node.addChildren(tokenByType(Tokens.CLOSE_PAREN));
     }
 
@@ -293,7 +315,7 @@ public class Parser {
         Node stmt = Node.empty("assignmentStmt");
         stmt.addChildren(derivate(this::varAccess));
         stmt.addChildren(tokenByType(Tokens.ASSIGNMENT));
-        stmt.addChildren(derivate(this::expr));
+        stmt.addChildren(derivate(expr));
         return stmt;
     }
 
@@ -339,32 +361,27 @@ public class Parser {
         Node stmt = Node.empty("procedureStmt");
         stmt.addChildren(tokenByType(Tokens.IDENTIFIER));
         if (!isCurrentTokenHasPos(Tokens.OPEN_PAREN)) return stmt;
-
-        if (tokenHasPos(tokens.lookahead(), Tokens.CLOSE_PAREN)) {
-            addParensDerivate(stmt, () -> Node.empty("actualParamList"));
-        } else {
-            addParensDerivate(stmt, actualParamList);
-        }
+        addParensDerivate(stmt, actualParamList);
 
         return stmt;
     }
 
     private Node actualParam() {
         Node actualParam = Node.empty("actualParam");
-        actualParam.addChildren(derivate(this::expr));
+        actualParam.addChildren(derivate(expr));
 
         if (!tryAddToken(actualParam, Tokens.COLON)) return actualParam;
-        actualParam.addChildren(derivate(this::expr));
+        actualParam.addChildren(derivate(expr));
 
         if (!tryAddToken(actualParam, Tokens.COLON)) return actualParam;
-        actualParam.addChildren(derivate(this::expr));
+        actualParam.addChildren(derivate(expr));
         return actualParam;
     }
 
     private Node returnStmt() {
         Node stmt = Node.empty("returnStmt");
         stmt.addChildren(tokenByType(Tokens.RETURN));
-        if (!isCurrentTokenHasPos(Tokens.SEMICOLON)) stmt.addChildren(derivate(this::expr));
+        if (!isCurrentTokenHasPos(Tokens.SEMICOLON)) stmt.addChildren(derivate(expr));
         return stmt;
     }
 
@@ -385,9 +402,9 @@ public class Parser {
         stmt.addChildren(tokenByType(Tokens.FOR));
         stmt.addChildren(tokenByType(Tokens.IDENTIFIER));
         stmt.addChildren(tokenByType(Tokens.ASSIGNMENT));
-        stmt.addChildren(derivate(this::expr));
+        stmt.addChildren(derivate(expr));
         stmt.addChildren(tokenByType(Tokens.DIRECTION));
-        stmt.addChildren(derivate(this::expr));
+        stmt.addChildren(derivate(expr));
         stmt.addChildren(tokenByType(Tokens.DO));
         stmt.addChildren(derivate(this::compoundStatement));
         return stmt;
@@ -412,7 +429,7 @@ public class Parser {
     }
 
     private Node booleanExpr() {
-        return derivate(this::expr);
+        return derivate(expr);
     }
 
     private Node stmtSeq1() {

@@ -47,7 +47,7 @@ public class AST {
         if (expr.size() == 4) {
             return new ProcedureStmtNode(
                     parseLiteral(expr.head()),
-                    collectRightRecursiveCall(expr.child(2), node -> parseArgument(node.head()))
+                    collectRightRecursiveCall(expr.child(2), AST::parseArgument)
             );
         }
         if (expr.size() == 1) {
@@ -88,7 +88,7 @@ public class AST {
 
     private static ArrayLiteralNode createArrayLiteralNode(Node node) {
         return new ArrayLiteralNode(
-                collectRightRecursiveCall(node.firstNonToken(Tokens.OPEN_CURLY), node1 -> parseExpr(node1.head()))
+                collectRightRecursiveCall(node.firstNonToken(Tokens.OPEN_CURLY), AST::parseExpr)
         );
     }
 
@@ -96,7 +96,7 @@ public class AST {
         if (varAccess.size() < 2) return parseLiteral(varAccess);
         if (hasToken(varAccess, Tokens.OPEN_BRACKET)) {
             GetIndexNode byIndex = new GetIndexNode();
-            collectRightRecursiveCall(varAccess.firstNonToken(Tokens.OPEN_BRACKET), node -> parseExpr(node.head()))
+            collectRightRecursiveCall(varAccess.firstNonToken(Tokens.OPEN_BRACKET), AST::parseExpr)
                     .forEach(byIndex::addIndex);
             byIndex.setTarget(parseVarAccess(varAccess.last()));
             return byIndex;
@@ -119,7 +119,7 @@ public class AST {
         String name = parseVarAccess(heading.child(1)).getValue();
         ProgramNode programNode = new ProgramNode(name, parseBlock(parse.child(2)));
         if (heading.size() > 2) {
-            collectRightRecursiveCall(heading.child(3), node -> parseLiteral(node.head()))
+            collectRightRecursiveCall(heading.child(3), AST::parseLiteral)
                     .forEach(programNode::addIdentifier);
         }
         return programNode;
@@ -128,8 +128,9 @@ public class AST {
     private static <T> List<T> collectRightRecursiveCall(Node node, Function<Node, T> parseItem) {
         List<T> result = new ArrayList<>();
         while (true) {
-            result.add(parseItem.apply(node));
-            if (node.size() <= 1) break;
+            if (node.size() < 1) break;
+            result.add(parseItem.apply(node.head()));
+            if (node.size() == 1) break;
             node = node.child(1);
         }
         return result;
@@ -138,11 +139,11 @@ public class AST {
     private static BlockNode parseBlock(Node block) {
         BlockNode blockNode = new BlockNode();
 
-        addPart(block, "labelDeclaration", blockNode.getLabels(), node -> new LiteralNode(parseVarAccess(node.head()).getValue(), TypeRegistry.STRING));
-        addPart(block, "constDeclaration", blockNode.getConstDefinitions(), node -> parseConstDefinition(node.head()));
-        addPart(block, "typeDeclaration", blockNode.getTypeDefinitions(), node -> parseTypeDefinition(parseVarAccess(node.head().head()).getValue(), node.head().child(2)));
-        addPart(block, "varDeclarationPart", blockNode.getVarDeclarations(), node -> parseVarDeclaration(node.head()));
-        addPart(block, "funcOrProcDeclaration", blockNode.getProcOrFunctionDeclarations(), node -> parseProcOrFunc(node.head()));
+        addPart(block, "labelDeclaration", blockNode.getLabels(), node -> new LiteralNode(parseVarAccess(node).getValue(), TypeRegistry.STRING));
+        addPart(block, "constDeclaration", blockNode.getConstDefinitions(), AST::parseConstDefinition);
+        addPart(block, "typeDeclaration", blockNode.getTypeDefinitions(), node -> parseTypeDefinition(parseVarAccess(node.head()).getValue(), node.head().child(2)));
+        addPart(block, "varDeclarationPart", blockNode.getVarDeclarations(), AST::parseVarDeclaration);
+        addPart(block, "funcOrProcDeclaration", blockNode.getProcOrFunctionDeclarations(), AST::parseProcOrFunc);
         if (block.size() > 0) blockNode.getStatements().addAll(parseStmtSeq(block.last()));
 
         if (!(last(blockNode.getStatements()) instanceof ReturnStmtNode)) {
@@ -168,7 +169,7 @@ public class AST {
             return new ProcedureStmtNode(
                     parseLiteral(head.head()),
                     head.size() > 1 && head.child(2).size() > 0 ? collectRightRecursiveCall(
-                            head.child(2), n1 -> parseArgument(n1.head())) : emptyList()
+                            head.child(2), AST::parseArgument) : emptyList()
             );
         }
 
@@ -209,7 +210,7 @@ public class AST {
     }
 
     private static List<ASTNode> collectStatements(Node node) {
-        return collectRightRecursiveCall(node, node1 -> parseStatement(node1.head()));
+        return collectRightRecursiveCall(node, AST::parseStatement);
     }
 
     private static ActualParameterNode parseArgument(Node head) {
@@ -231,27 +232,25 @@ public class AST {
 
     private static FuncOrProcHeadingNode parseHeading(Node heading) {
         String name = parseLiteral(heading.child(1)).getValue();
-        List<LiteralParameterNode> parameters = heading.size() > 2 ? collectRightRecursiveCall(heading.child(2).child(1), node -> parseParameter(node.head())) : emptyList();
+        List<LiteralParameterNode> parameters = heading.size() > 2  ? collectRightRecursiveCall(heading.child(2).child(1), AST::parseParameter) : emptyList();
         LiteralNode type = heading.size() > 2 && isToken(heading.last(), Tokens.IDENTIFIER) ? parseLiteral(heading.last()) : null;
         return new FuncOrProcHeadingNode(name, type, parameters);
     }
 
     private static LiteralParameterNode parseParameter(Node parameter) {
         return new LiteralParameterNode(
-                collectRightRecursiveCall(parameter.firstNonToken(Tokens.VAR).head(), node -> parseLiteral(node.head())),
+                collectRightRecursiveCall(parameter.firstNonToken(Tokens.VAR).head(), AST::parseLiteral),
                 parseLiteral(parameter.head().last())
         );
     }
 
     private static <T> void addPart(Node block, String blockName, List<T> items, Function<Node, T> itemSupplier) {
-        block.firstChildWithName(blockName).ifPresent(node -> {
-            items.addAll(collectRightRecursiveCall(node.firstNullToken(), itemSupplier));
-        });
+        block.firstChildWithName(blockName).ifPresent(node -> items.addAll(collectRightRecursiveCall(node.firstNullToken(), itemSupplier)));
     }
 
     private static VarDeclarationNode parseVarDeclaration(Node varDeclaration) {
         return new VarDeclarationNode(
-                collectRightRecursiveCall(varDeclaration.head(), node -> parseLiteral(node.head())),
+                collectRightRecursiveCall(varDeclaration.head(), AST::parseLiteral),
                 parseTypeDefinition(varDeclaration.child(2))
         );
     }
@@ -269,12 +268,12 @@ public class AST {
         }
         if (hasName(head, "ordinalType")) {
             if (hasToken(head, Tokens.OPEN_PAREN)) {
-                return new EnumTypeNode(name, collectRightRecursiveCall(head.child(1), node -> parseLiteral(node.head())));
+                return new EnumTypeNode(name, collectRightRecursiveCall(head.child(1), AST::parseLiteral));
             }
             return parseSubrangeType(name, head);
         }
         if (hasName(head, "arrayType")) {
-            return new ArrayTypeNode(name, collectRightRecursiveCall(head.child(2), node -> parseSubrangeType(node.head())), parseTypeDefinition(head.last()), packed);
+            return new ArrayTypeNode(name, collectRightRecursiveCall(head.child(2), AST::parseSubrangeType), parseTypeDefinition(head.last()), packed);
         }
         //todo add record type
         if (hasToken(type, Tokens.SET)) {

@@ -45,9 +45,9 @@ public enum OpCommand {
     ARRAYLENGTH(0xbe),
     INC(0x84, 2),
 
-    IRETURN(0xac)
+    IRETURN(0xac),
 
-    ;
+    INVOKESTATIC(0xb8, 2);
 
     private final String mnemonic;
     private final int code;

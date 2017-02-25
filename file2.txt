@@ -1,9 +1,10 @@
 program binary_search;
 
-function sum(x, y: Integer):Integer;
+function fac(n: Integer):Integer;
 begin
-    return (x + y);
+    if n = 0 then return 1
+    else return (n * fac(n - 1))
 end;
 begin
-  writeln(sum(5,6));
+  writeln(fac(5));
 end.

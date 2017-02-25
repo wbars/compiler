@@ -21,9 +21,9 @@ import static java.util.Objects.requireNonNull;
 public class ConstantPool {
     private List<ConstantInfo> constants = new ArrayList<>();
     private Map<Type, Function<String, ConstantInfo>> typeConstantMapping = new HashMap<>();
-    private Registry<GeneratedCode> customFunctionsRegistry = new Registry<>();
     private final Registry<GeneratedCode> customFunctionCodeRegistry = new Registry<>();
     private final Registry<NativeFunction<List<Type>>> customFunctionIndexesRegistry = new Registry<>();
+    private final Registry<String> customFunctionDescriptorRegistry = new Registry<>();
 
     public ConstantPool() {
         registerTypeConstantMapping();
@@ -37,6 +37,10 @@ public class ConstantPool {
         typeConstantMapping.put(TypeRegistry.LONG, (value) -> new DoubleConstantInfo(parseLong(value), constants.size()));
         typeConstantMapping.put(TypeRegistry.STRING, (value) -> new StringConstantInfo(trimQuotes(value), getConstantIndex(trimQuotes(value), TypeRegistry.UTF8), constants.size()));
         typeConstantMapping.put(TypeRegistry.UTF8, s -> new Utf8ConstantInfo(s, constants.size()));
+    }
+
+    public int customMethodsCount() {
+        return customFunctionCodeRegistry.size();
     }
 
     private static String trimQuotes(String value) {
@@ -111,15 +115,15 @@ public class ConstantPool {
         return constants;
     }
 
-    public void registerCustomFunction(String name, GeneratedCode methodCode) {
-        customFunctionsRegistry.register(name, methodCode);
-    }
-
     public Registry<NativeFunction<List<Type>>> getCustomFunctionIndexesRegistry() {
         return customFunctionIndexesRegistry;
     }
 
     public Registry<GeneratedCode> getCustomFunctionCodeRegistry() {
         return customFunctionCodeRegistry;
+    }
+
+    public Registry<String> getCustomFunctionDescriptorRegistry() {
+        return customFunctionDescriptorRegistry;
     }
 }
