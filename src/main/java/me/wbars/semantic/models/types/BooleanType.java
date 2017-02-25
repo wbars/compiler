@@ -5,4 +5,14 @@ public class BooleanType implements Type {
     public String name() {
         return "Boolean";
     }
+
+    @Override
+    public String alias() {
+        return "Z";
+    }
+
+    @Override
+    public int aType() {
+        return 4;
+    }
 }

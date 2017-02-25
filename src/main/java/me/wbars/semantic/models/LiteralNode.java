@@ -4,6 +4,9 @@ import me.wbars.generator.JvmBytecodeGenerator;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
+import java.util.Collections;
+import java.util.List;
+
 public class LiteralNode extends ASTNode {
 
     public LiteralNode(String name, Type type) {
@@ -19,5 +22,15 @@ public class LiteralNode extends ASTNode {
     @Override
     public int generateCode(JvmBytecodeGenerator codeGenerator) {
         return codeGenerator.generate(this);
+    }
+
+    @Override
+    protected void replaceChild(int index, ASTNode node) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<ASTNode> children() {
+        return Collections.emptyList();
     }
 }

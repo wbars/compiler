@@ -1,6 +1,6 @@
 package me.wbars.generator.code;
 
-import me.wbars.generator.IntegerToByteConverter;
+import me.wbars.generator.NumberToByteConverter;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ public class DoubleConstantInfo implements ConstantInfo {
 
     @Override
     public int getTag() {
-        return 4;
+        return 6;
     }
 
     @Override
@@ -30,10 +30,15 @@ public class DoubleConstantInfo implements ConstantInfo {
 
     @Override
     public List<Byte> toBytes() {
-        return IntegerToByteConverter.convert(value, 8);
+        return NumberToByteConverter.convert(value, getSize());
     }
 
     public double getValue() {
         return value;
+    }
+
+    @Override
+    public int getSize() {
+        return 8;
     }
 }

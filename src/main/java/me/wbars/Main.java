@@ -3,13 +3,15 @@ package me.wbars;
 import me.wbars.generator.CodeToHexClassFileConverter;
 import me.wbars.generator.JvmBytecodeGenerator;
 import me.wbars.generator.code.GeneratedCode;
+import me.wbars.optimizer.ConstantFoldingOptimizer;
+import me.wbars.optimizer.OptimizeProcessor;
 import me.wbars.parser.Parser;
 import me.wbars.parser.models.Node;
 import me.wbars.scanner.Scanner;
 import me.wbars.scanner.io.ScannerFilePersister;
 import me.wbars.scanner.models.Token;
 import me.wbars.scanner.models.TransitionTable;
-import me.wbars.semantic.AST;
+import me.wbars.semantic.ASTProcessor;
 import me.wbars.semantic.models.ProgramNode;
 import me.wbars.semantic.models.types.TypeRegistry;
 
@@ -25,13 +27,19 @@ public class Main {
 //        TransitionTable table = stringGrammarReader.readTable();
 //        ScannerFilePersister.writeToFile(table, "table");
         TransitionTable table1 = ScannerFilePersister.fromFile("table");
-        List<Token> scan = Scanner.scan(getFileContents("file2.txt"), table1);
+        List<Token> scan = Scanner.scan(getFileContents(args[0]), table1);
         Node parse = Parser.parse(scan);
-        ProgramNode ast = AST.parseProgram(parse);
+        ASTProcessor astProcessor = new ASTProcessor();
+        ProgramNode ast = astProcessor.parseProgram(parse);
         TypeRegistry typeRegistry = new TypeRegistry();
         ast.getProcessedType(typeRegistry);
-        GeneratedCode generatedCode = JvmBytecodeGenerator.generateCode(ast.getBlock());
-        CodeToHexClassFileConverter.toFile(generatedCode, "Main.class");
+
+        OptimizeProcessor optimizeProcessor = new OptimizeProcessor();
+        optimizeProcessor.register("constant folding", new ConstantFoldingOptimizer());
+        optimizeProcessor.process(ast);
+
+        GeneratedCode generatedCode = JvmBytecodeGenerator.generateCode(ast);
+        CodeToHexClassFileConverter.toFile(generatedCode);
     }
 
     private static String getFileContents(String path) throws IOException {

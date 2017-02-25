@@ -4,25 +4,13 @@ import static java.util.Objects.requireNonNull;
 
 public class ArrayType implements Type {
     private Type type;
-    private Integer lowerBound;
-    private Integer upperBound;
 
-    ArrayType(Type type, Integer lowerBound, Integer upperBound) {
+    ArrayType(Type type) {
         this.type = requireNonNull(type);
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
     }
 
     public Type getType() {
         return type;
-    }
-
-    public Integer getLowerBound() {
-        return lowerBound;
-    }
-
-    public Integer getUpperBound() {
-        return upperBound;
     }
 
     @Override
@@ -37,16 +25,16 @@ public class ArrayType implements Type {
 
         ArrayType arrayType = (ArrayType) o;
 
-        if (!type.equals(arrayType.type)) return false;
-        if (!lowerBound.equals(arrayType.lowerBound)) return false;
-        return upperBound.equals(arrayType.upperBound);
+        return type.equals(arrayType.type);
     }
 
     @Override
     public int hashCode() {
-        int result = type.hashCode();
-        result = 31 * result + lowerBound.hashCode();
-        result = 31 * result + upperBound.hashCode();
-        return result;
+        return type.hashCode();
+    }
+
+    @Override
+    public String alias() {
+        return "[" + type.alias();
     }
 }

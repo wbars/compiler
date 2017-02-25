@@ -1,5 +1,6 @@
 package me.wbars.utils;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -21,5 +22,8 @@ public class Registry<T> {
 
     public Set<String> keys() {
         return elements.keySet();
+    }
+    public Collection<T> values() {
+        return elements.values();
     }
 }

@@ -1,6 +1,6 @@
 package me.wbars.generator.code;
 
-import me.wbars.generator.IntegerToByteConverter;
+import me.wbars.generator.NumberToByteConverter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +36,13 @@ public class NameAndTypeConstantInfo implements ConstantInfo {
     @Override
     public List<Byte> toBytes() {
         List<Byte> result = new ArrayList<>();
-        result.addAll(IntegerToByteConverter.convert(nameIndex, 2));
-        result.addAll(IntegerToByteConverter.convert(typeIndex, 2));
+        result.addAll(NumberToByteConverter.convert(nameIndex, 2));
+        result.addAll(NumberToByteConverter.convert(typeIndex, 2));
         return result;
+    }
+
+    @Override
+    public int getSize() {
+        return 4;
     }
 }

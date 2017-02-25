@@ -5,4 +5,9 @@ public class IntegerType implements Type {
     public String name() {
         return "Integer";
     }
+
+    @Override
+    public int aType() {
+        return 10;
+    }
 }

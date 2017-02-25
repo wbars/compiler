@@ -5,4 +5,9 @@ public class CharType implements Type {
     public String name() {
         return "Char";
     }
+
+    @Override
+    public int aType() {
+        return 5;
+    }
 }

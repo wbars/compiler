@@ -23,7 +23,6 @@ public class TypeRegistry extends Registry<Type> {
     private SymbolTable table = new SymbolTable(null);
 
     public static final IntegerType INTEGER = new IntegerType();
-
     public static final LongType LONG = new LongType();
     public static final StringType STRING = new StringType();
     public static final BooleanType BOOLEAN = new BooleanType();
@@ -32,8 +31,17 @@ public class TypeRegistry extends Registry<Type> {
     public static final VoidType VOID = new VoidType();
     public static final Utf8Type UTF8 = new Utf8Type();
 
-    private static ArrayType createArrayType(Type type, Integer lowerBound, Integer upperBound) {
-        return new ArrayType(type, lowerBound, upperBound);
+    public static boolean isFoldable(Type type) {
+        return type == INTEGER
+                || type == LONG
+                || type == BOOLEAN
+                || type == CHAR
+                || type == DOUBLE
+                ;
+    }
+
+    public static ArrayType createArrayType(Type type) {
+        return new ArrayType(type);
     }
 
     private static SetType createSetType(Type type) {
@@ -72,6 +80,7 @@ public class TypeRegistry extends Registry<Type> {
         table.register("Boolean", BOOLEAN);
 
         table.register("len", INTEGER);
+        table.register("new_array", createArrayType(TypeRegistry.INTEGER)); //todo generic solution?
 
     }
 
@@ -142,7 +151,7 @@ public class TypeRegistry extends Registry<Type> {
                 ;
     }
 
-    private Type typeCast(Type first, Type second) {
+    public Type typeCast(Type first, Type second) {
         if (first.equals(second)) return first;
         if (typeCasts.getOrDefault(first, emptySet()).contains(second)) return first;
         if (typeCasts.getOrDefault(second, emptySet()).contains(first)) return second;
@@ -199,22 +208,13 @@ public class TypeRegistry extends Registry<Type> {
     }
 
     public Type processType(ArrayTypeNode arrayTypeNode) {
-        List<SubrangeTypeNode> indexes = arrayTypeNode.getIndexes();
-        if (indexes.size() > 1) {
-            //todo rid-off from side effect
-            SubrangeTypeNode lastIndexes = indexes.remove(indexes.size() - 1);
-            return createArrayType(
-                    processType(arrayTypeNode),
-                    Integer.parseInt(lastIndexes.getLeftBound().getValue()),
-                    Integer.parseInt(lastIndexes.getRightBound().getValue())
-            );
-        }
+        return processType(arrayTypeNode, 1);
+    }
 
-        return createArrayType(
-                getProcessedType(arrayTypeNode.getComponentType()),
-                Integer.parseInt(indexes.get(0).getLeftBound().getValue()),
-                Integer.parseInt(indexes.get(0).getRightBound().getValue())
-        );
+    private Type processType(ArrayTypeNode arrayTypeNode, int dimensionsCounter) {
+        if (arrayTypeNode.size() <= dimensionsCounter)
+            return createArrayType(getProcessedType(arrayTypeNode.getComponentType()));
+        return createArrayType(processType(arrayTypeNode, dimensionsCounter + 1));
     }
 
     public Type processType(TypeAliasNode typeAliasNode) {
@@ -257,7 +257,8 @@ public class TypeRegistry extends Registry<Type> {
             final ExprNode initialValue = forStmtNode.getInitialValue();
             getProcessedType(forStmtNode.getFinalValue());
             getProcessedType(initialValue);
-            if (table.lookup(controlVar.getValue()) == null) table.register(controlVar.getValue(), initialValue.getType());
+            if (table.lookup(controlVar.getValue()) == null)
+                table.register(controlVar.getValue(), initialValue.getType());
             getProcessedType(controlVar);
             forStmtNode.getStatements().forEach(this::getProcessedType);
 
@@ -291,25 +292,13 @@ public class TypeRegistry extends Registry<Type> {
         return getProcessedType(actualParameterNode.getFirst());
     }
 
-    public Type processType(ArrayLiteralNode arrayLiteralNode) {
+    public ArrayType processType(ArrayLiteralNode arrayLiteralNode) {
         Set<Type> itemsTypes = arrayLiteralNode.getItems().stream()
                 .map(exprNode -> exprNode.getProcessedType(this))
                 .collect(Collectors.toSet());
         if (itemsTypes.size() > 1)
             throw new RuntimeException("Items of array " + arrayLiteralNode.getValue() + " has different types");
-        return createArrayType(itemsTypes.iterator().next(), 0, arrayLiteralNode.getItems().size() - 1);
-    }
-
-    public Map<String, ASTNode> getConstants() {
-        return constants;
-    }
-
-    public Map<String, ASTNode> getFunctions() {
-        return functions;
-    }
-
-    public SymbolTable getTable() {
-        return table;
+        return createArrayType(itemsTypes.iterator().next());
     }
 
     public Type processType(IfStmtNode ifStmtNode) {
@@ -327,5 +316,13 @@ public class TypeRegistry extends Registry<Type> {
 
     public Type processType(ReturnStmtNode returnStmtNode) {
         return returnStmtNode.getExpr() != null ? returnStmtNode.getExpr().getProcessedType(this) : VOID;
+    }
+
+    public Type processType(WhileStmtNode whileStmtNode) {
+        return dispatchInNestedScope(() -> {
+            getProcessedType(whileStmtNode.getCondition());
+            whileStmtNode.getStatements().forEach(this::getProcessedType);
+            return VOID;
+        });
     }
 }

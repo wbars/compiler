@@ -4,8 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IntegerToByteConverter {
-    private IntegerToByteConverter() {}
+public class NumberToByteConverter {
+    private NumberToByteConverter() {}
     public static List<Byte> convert(Integer value, int size) {
         return getBytes(size, ByteBuffer.allocate(4).putInt(value).array());
     }

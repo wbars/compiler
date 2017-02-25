@@ -5,4 +5,9 @@ public class StringType implements Type {
     public String name() {
         return "String";
     }
+
+    @Override
+    public String alias() {
+        return "Ljava/lang/String;";
+    }
 }

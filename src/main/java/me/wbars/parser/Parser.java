@@ -265,7 +265,7 @@ public class Parser {
             return compoundStmt;
         }
 
-        // wrap plays role of hack for AST processor
+        // wrap plays role of hack for ASTProcessor processor
         // this node will be recognized as one-element right recursive seq
         compoundStmt.addChildren(wrap(derivate(this::stmt)));
         return compoundStmt;
@@ -415,7 +415,7 @@ public class Parser {
         stmt.addChildren(tokenByType(Tokens.WHILE));
         stmt.addChildren(derivate(this::booleanExpr));
         stmt.addChildren(tokenByType(Tokens.DO));
-        stmt.addChildren(derivate(this::stmt));
+        stmt.addChildren(derivate(this::compoundStatement));
         return stmt;
     }
 
@@ -639,9 +639,11 @@ public class Parser {
     private Node arrayType() {
         Node arrayType = Node.empty("arrayType");
         arrayType.addChildren(tokenByType(Tokens.ARRAY));
-        arrayType.addChildren(tokenByType(Tokens.OPEN_BRACKET));
-        arrayType.addChildren(derivate(indexList));
-        arrayType.addChildren(tokenByType(Tokens.CLOSE_BRACKET));
+        if (tryAddToken(arrayType, Tokens.OPEN_BRACKET)) {
+            arrayType.addChildren(derivate(indexList));
+            arrayType.addChildren(tokenByType(Tokens.CLOSE_BRACKET));
+        }
+
         arrayType.addChildren(tokenByType(Tokens.OF));
         arrayType.addChildren(derivate(this::typeDenoter));
         return arrayType;

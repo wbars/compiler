@@ -1,5 +1,8 @@
 package me.wbars.semantic.models;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class VariantSelectorNode extends ASTNode {
     private final LiteralNode tagField;
     private final LiteralNode tagType;
@@ -21,5 +24,15 @@ public class VariantSelectorNode extends ASTNode {
 
     public VariantNode getVariantNode() {
         return variantNode;
+    }
+
+    @Override
+    protected void replaceChild(int index, ASTNode node) {
+        throw new UnsupportedOperationException(); //todo
+    }
+
+    @Override
+    public List<ASTNode> children() {
+        return Arrays.asList(tagField, tagType, variantNode);
     }
 }

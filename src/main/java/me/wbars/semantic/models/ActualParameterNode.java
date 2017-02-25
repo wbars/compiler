@@ -4,15 +4,22 @@ import me.wbars.generator.JvmBytecodeGenerator;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class ActualParameterNode extends ASTNode {
-    private final BinaryOpNode first;
-    private final BinaryOpNode second;
-    private final BinaryOpNode third;
+    private BinaryOpNode first;
+    private BinaryOpNode second;
+    private BinaryOpNode third;
     public ActualParameterNode(BinaryOpNode first, BinaryOpNode second, BinaryOpNode third) {
-        super(first.getValue());
+        super(first != null ? first.getValue() : null);
         this.first = first;
         this.second = second;
         this.third = third;
+    }
+
+    public ActualParameterNode() {
+        this(null, null, null);
     }
 
     public BinaryOpNode getFirst() {
@@ -27,6 +34,18 @@ public class ActualParameterNode extends ASTNode {
         return third;
     }
 
+    public void setFirst(BinaryOpNode first) {
+        this.first = first;
+    }
+
+    public void setSecond(BinaryOpNode second) {
+        this.second = second;
+    }
+
+    public void setThird(BinaryOpNode third) {
+        this.third = third;
+    }
+
     @Override
     protected Type getType(TypeRegistry typeRegistry) {
         return typeRegistry.processType(this);
@@ -36,4 +55,18 @@ public class ActualParameterNode extends ASTNode {
     public int generateCode(JvmBytecodeGenerator codeGenerator) {
         return codeGenerator.generate(this);
     }
+
+    @Override
+    protected void replaceChild(int index, ASTNode node) {
+        if (index == 0) first = (BinaryArithmeticOpNode) node;
+        if (index == 1) second = (BinaryArithmeticOpNode) node;
+        if (index == 2) third = (BinaryArithmeticOpNode) node;
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public List<ASTNode> children() {
+        return Arrays.asList(first, second, third);
+    }
+
 }

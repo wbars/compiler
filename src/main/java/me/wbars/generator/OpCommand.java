@@ -16,12 +16,21 @@ public enum OpCommand {
     LDC2_W(0x14, 2),
     ASTORE(0x3a, 1),
     INVOKEVIRTUAL(0xb6, 2),
+
+    DSTORE(0x39, 1),
+    DLOAD(0x18, 1),
+    DADD(0x63),
+    DMUL(0x6b),
+    DDIV(0x6f),
+    DSUB(0x67),
+
     ISTORE(0x36, 1),
     ILOAD(0x15, 1),
     IADD(0x60),
     IMUL(0x68),
     IDIV(0x6c),
     ISUB(0x64),
+
     SALOAD(0x35),
     SASTORE(0x56),
     NEWARRAY(0xbc, 1),

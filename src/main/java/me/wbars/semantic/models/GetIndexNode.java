@@ -31,4 +31,14 @@ public class GetIndexNode extends UnaryOpNode {
     public int generateCode(JvmBytecodeGenerator codeGenerator) {
         return codeGenerator.generate(this);
     }
+
+    @Override
+    public List<ASTNode> children() {
+        return indexes;
+    }
+
+    @Override
+    protected void replaceChild(int index, ASTNode node) {
+        indexes.set(index, node);
+    }
 }

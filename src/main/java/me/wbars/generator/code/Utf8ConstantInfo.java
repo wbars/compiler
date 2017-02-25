@@ -1,6 +1,6 @@
 package me.wbars.generator.code;
 
-import me.wbars.generator.IntegerToByteConverter;
+import me.wbars.generator.NumberToByteConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -45,11 +45,16 @@ public class Utf8ConstantInfo implements ConstantInfo {
         byte[] bytes = out.toByteArray();
         List<Byte> result = new ArrayList<>();
         //todo what meaning of 2 first bytes?
-        result.addAll(IntegerToByteConverter.convert(bytes.length - 2, 2));
+        result.addAll(NumberToByteConverter.convert(bytes.length - 2, getSize()));
         for (int i = 2; i < bytes.length; i++) {
             byte b = bytes[i];
             result.add(b);
         }
         return result;
+    }
+
+    @Override
+    public int getSize() {
+        return 2;
     }
 }

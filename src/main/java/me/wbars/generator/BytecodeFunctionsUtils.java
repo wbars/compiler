@@ -2,7 +2,6 @@ package me.wbars.generator;
 
 import me.wbars.semantic.models.LiteralNode;
 import me.wbars.semantic.models.ProcOrFunctionDeclarationNode;
-import me.wbars.semantic.models.types.ArrayType;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
@@ -30,26 +29,14 @@ public class BytecodeFunctionsUtils {
     }
 
     public static int customMethod(JvmBytecodeGenerator generator, String name, String typeDescriptor) {
-        return generator.getConstantPool().getFieldOrMethodIndex("Main." + name, typeDescriptor);
+        return generator.getConstantPool().getFieldOrMethodIndex(generator.getClassName() + "." + name, typeDescriptor);
     }
 
     private static String getTypeDescriptor(List<Type> argumentTypes, Type resultType) {
         String argumentsDescriptor = argumentTypes.stream()
-                .map(BytecodeFunctionsUtils::getTypeAlias)
+                .map(Type::alias)
                 .reduce((c, c2) -> c + c2).orElse("");
-        return "(" + argumentsDescriptor + ")" + getTypeAlias(resultType);
-    }
-
-    private static String getTypeAlias(Type type) {
-        if (type == TypeRegistry.BOOLEAN) return "Z";
-        if (type == TypeRegistry.LONG) return "J";
-        if (type == TypeRegistry.STRING) return "Ljava/lang/String;";
-        if (type instanceof ArrayType) return getArrayTypeAlias((ArrayType) type);
-        return String.valueOf(type.name().toUpperCase().charAt(0));
-    }
-
-    private static String getArrayTypeAlias(ArrayType type) {
-        return "[" + getTypeAlias(type.getType());
+        return "(" + argumentsDescriptor + ")" + resultType.alias();
     }
 
     public static int registerMethod(JvmBytecodeGenerator generator, ProcOrFunctionDeclarationNode declaration) {
@@ -67,9 +54,9 @@ public class BytecodeFunctionsUtils {
         declaration.getHeading().getParameters().stream()
                 .flatMap(literalParameterNode -> literalParameterNode.getIdentifiers().stream())
                 .forEach(l -> registerTable.register(l.getValue()));
-        generator.getConstantPool().getCustomFunctionCodeRegistry().register(name, JvmBytecodeGenerator.generateCode(declaration.getBody(), generator.getConstantPool(), registerTable));
+        generator.getConstantPool().getCustomFunctionCodeRegistry().register(name, JvmBytecodeGenerator.generateCode(declaration.getBody(), generator.getConstantPool(), registerTable, generator.getClassName()));
 
-        return generator.getConstantPool().getFieldOrMethodIndex("Main." + name, typeDescriptor);
+        return generator.getConstantPool().getFieldOrMethodIndex(generator.getClassName() + "." + name, typeDescriptor);
     }
 
     private static <T> Stream<T> replicate(T item, int count) {

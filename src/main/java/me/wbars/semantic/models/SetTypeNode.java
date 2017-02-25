@@ -3,11 +3,22 @@ package me.wbars.semantic.models;
 import me.wbars.semantic.models.types.Type;
 import me.wbars.semantic.models.types.TypeRegistry;
 
+import java.util.Collections;
+import java.util.List;
+
 public class SetTypeNode extends CompoundTypeNode {
-    private final ASTNode baseType;
+    private ASTNode baseType;
 
     public SetTypeNode(String name, ASTNode baseType, boolean packed) {
         super(name, packed);
+        this.baseType = baseType;
+    }
+
+    public SetTypeNode(String name, boolean packed) {
+        this(name, null, packed);
+    }
+
+    public void setBaseType(ASTNode baseType) {
         this.baseType = baseType;
     }
 
@@ -18,5 +29,16 @@ public class SetTypeNode extends CompoundTypeNode {
     @Override
     protected Type getType(TypeRegistry typeRegistry) {
         return typeRegistry.processType(this);
+    }
+
+    @Override
+    protected void replaceChild(int index, ASTNode node) {
+        if (index != 0) throw new IllegalArgumentException();
+        baseType = node;
+    }
+
+    @Override
+    public List<ASTNode> children() {
+        return Collections.singletonList(baseType);
     }
 }

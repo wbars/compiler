@@ -22,14 +22,9 @@ public class CodeToHexClassFileConverter {
     private final int minorVersion = 0;
     private final int majorVersion = 52;
     private final int accessFlagSuper = 0x0020;
-    private final int accessFlagPublic = 0x0001;
-    private final int superClass = 0;
-    private final int methodsCount = 2;
     private final GeneratedCode code;
 
-    private static final String SOURCE_FILENAME = "Main.java";
     private static final String VOID_TYPE = "()V";
-    private static final String THIS_CLASS = "Main";
     private static final String SOURCE_FILE_TAG = "SourceFile";
     private static final String CODE_FIELD = "Code";
     private static final String MAIN_TYPE_DESCRIPTOR = "([Ljava/lang/String;)V";
@@ -43,27 +38,21 @@ public class CodeToHexClassFileConverter {
     private final List<Byte> SOURCE_FILE_ATTRIBUTE;
     private final int THIS_CLASS_INDEX;
     private final int OBJECT_CLASS_INDEX;
-    private final int CLASS_FLAG_SUPER = 0;
     private final String BOOTSTRAP_INIT_METHOD = "<init>";
-    private final int BOOTSTRAP_ATTRIBUTES_COUNT = 1;
 
-    private final List<Byte> ONE_2_BYTES = IntegerToByteConverter.convert(1, 2);
-    private final List<Byte> ZERO_2_BYTES = IntegerToByteConverter.convert(0, 2);
+    private final List<Byte> ONE_2_BYTES = NumberToByteConverter.convert(1, 2);
+    private final List<Byte> ZERO_2_BYTES = NumberToByteConverter.convert(0, 2);
 
-    private final List<Byte> BOOTSTRAP_METHOD_MAX_STACK = ONE_2_BYTES;
-    private final List<Byte> BOOTSTRAP_METHOD_MAX_LOCALS = ONE_2_BYTES;
-    private final List<Byte> BOOTSTRAP_METHOD_EXCEPTIONS_COUNT = ZERO_2_BYTES;
-    private final List<Byte> BOOTSTRAP_METHOD_ATTRIBUTES_COUNT = ZERO_2_BYTES;
-    private final List<Byte> METHOD_PUBLIC_STATIC_MASK = IntegerToByteConverter.convert(9, 2);
+    private final List<Byte> METHOD_PUBLIC_STATIC_MASK = NumberToByteConverter.convert(9, 2);
     private final String MAIN_METHOD_NAME = "main";
     private final List<Byte> MAIN_METHOD_ATTRIBUTES_COUNT = ONE_2_BYTES;
     private final List<Byte> MAIN_METHOD_EXCEPTIONS_COUNT = ZERO_2_BYTES;
-    private final List<Byte> SOURCE_FILE_ATTRIBUTE_ARGUMENT_SIZE = IntegerToByteConverter.convert(2, 4);
+    private final List<Byte> SOURCE_FILE_ATTRIBUTE_ARGUMENT_SIZE = NumberToByteConverter.convert(2, 4);
     private List<Byte> MAIN_METHOD_BODY_ATTRIBUTES_COUNT = ZERO_2_BYTES;
 
     public CodeToHexClassFileConverter(GeneratedCode code) {
         this.code = code;
-        THIS_CLASS_INDEX = code.getConstantPool().getClass(THIS_CLASS);
+        THIS_CLASS_INDEX = code.getConstantPool().getClass(code.getClassName());
         OBJECT_CLASS_INDEX = code.getConstantPool().getClass(OBJECT_CLASS);
         INIT_METHOD = mainBootstrapMethod();
         MAIN_METHOD = mainMethod();
@@ -79,22 +68,22 @@ public class CodeToHexClassFileConverter {
 
     public List<Byte> convert() {
         return flatten(asList(
-                IntegerToByteConverter.convert(magic, 4), //magic
-                IntegerToByteConverter.convert(minorVersion, 2),
-                IntegerToByteConverter.convert(majorVersion, 2),
+                NumberToByteConverter.convert(magic, 4), //magic
+                NumberToByteConverter.convert(minorVersion, 2),
+                NumberToByteConverter.convert(majorVersion, 2),
                 constantPoolToBytes(),
-                IntegerToByteConverter.convert(accessFlagSuper, 2),
-                IntegerToByteConverter.convert(THIS_CLASS_INDEX, 2),
-                IntegerToByteConverter.convert(OBJECT_CLASS_INDEX, 2),
-                IntegerToByteConverter.convert(INTERFACES_COUNT, 2),
-                IntegerToByteConverter.convert(FIELDS_COUNT, 2),
+                NumberToByteConverter.convert(accessFlagSuper, 2),
+                NumberToByteConverter.convert(THIS_CLASS_INDEX, 2),
+                NumberToByteConverter.convert(OBJECT_CLASS_INDEX, 2),
+                NumberToByteConverter.convert(INTERFACES_COUNT, 2),
+                NumberToByteConverter.convert(FIELDS_COUNT, 2),
 
-                IntegerToByteConverter.convert(METHODS_COUNT + code.getConstantPool().customMethodsCount(), 2),
+                NumberToByteConverter.convert(METHODS_COUNT + code.getConstantPool().customMethodsCount(), 2),
                 INIT_METHOD,
                 MAIN_METHOD,
                 customMethods(),
 
-                IntegerToByteConverter.convert(ATTRIBUTES_COUNT, 2),
+                NumberToByteConverter.convert(ATTRIBUTES_COUNT, 2),
                 SOURCE_FILE_ATTRIBUTE)
         );
     }
@@ -115,9 +104,9 @@ public class CodeToHexClassFileConverter {
 
     private List<Byte> createMethod(String name, String descriptor, List<Byte> codeLines, int maxStack, int maxLocals) {
         List<Byte> codeBody = flatten(asList(
-                IntegerToByteConverter.convert(maxStack, 2),
-                IntegerToByteConverter.convert(maxLocals, 2),
-                IntegerToByteConverter.convert(codeLines.size(), 4),
+                NumberToByteConverter.convert(maxStack, 2),
+                NumberToByteConverter.convert(maxLocals, 2),
+                NumberToByteConverter.convert(codeLines.size(), 4),
                 codeLines,
                 MAIN_METHOD_BODY_ATTRIBUTES_COUNT,
                 ZERO_2_BYTES
@@ -125,11 +114,11 @@ public class CodeToHexClassFileConverter {
         ));
         return flatten(asList(
                 METHOD_PUBLIC_STATIC_MASK,
-                IntegerToByteConverter.convert(getStringConstant(name), 2),
-                IntegerToByteConverter.convert(getStringConstant(descriptor), 2),
+                NumberToByteConverter.convert(getStringConstant(name), 2),
+                NumberToByteConverter.convert(getStringConstant(descriptor), 2),
                 MAIN_METHOD_ATTRIBUTES_COUNT,
-                IntegerToByteConverter.convert(getStringConstant(CODE_FIELD), 2),
-                IntegerToByteConverter.convert(codeBody.size(), 4),
+                NumberToByteConverter.convert(getStringConstant(CODE_FIELD), 2),
+                NumberToByteConverter.convert(codeBody.size(), 4),
                 codeBody
         ));
     }
@@ -159,42 +148,42 @@ public class CodeToHexClassFileConverter {
 
     private List<Byte> sourceFileAttribute() {
         return flatten(asList(
-                IntegerToByteConverter.convert(getStringConstant(SOURCE_FILE_TAG), 2),
+                NumberToByteConverter.convert(getStringConstant(SOURCE_FILE_TAG), 2),
                 SOURCE_FILE_ATTRIBUTE_ARGUMENT_SIZE,
-                IntegerToByteConverter.convert(getStringConstant(SOURCE_FILENAME), 2)
+                NumberToByteConverter.convert(getStringConstant(code.getClassName() + ".java"), 2)
         ));
     }
 
     private List<Byte> generateBytecode(CodeLine codeLine) {
         return flatten(asList(
-                IntegerToByteConverter.convert(codeLine.getCommand().getCode(), 2),
-                codeLine.getArgument() != null ? IntegerToByteConverter.convert(codeLine.getArgument(), codeLine.getCommand().getArgumentsSize()) : null
+                NumberToByteConverter.convert(codeLine.getCommand().getCode(), 2),
+                codeLine.getArgument() != null ? NumberToByteConverter.convert(codeLine.getArgument(), codeLine.getCommand().getArgumentsSize()) : null
         ));
     }
 
     private List<Byte> constantPoolToBytes() {
         return flatten(asList(
-                IntegerToByteConverter.convert(code.getConstantPool().size(), 2),
+                NumberToByteConverter.convert(code.getConstantPool().size(), 2),
                 constantsBytes()
         ));
     }
 
     private List<Byte> constantsBytes() {
         return code.getConstantPool().getConstants().stream()
-                .skip(1)
+                .filter(Objects::nonNull)
                 .flatMap(c -> constantInfoToBytes(c).stream())
                 .collect(Collectors.toList());
     }
 
     private List<Byte> constantInfoToBytes(ConstantInfo constantInfo) {
         return flatten(asList(
-                IntegerToByteConverter.convert(constantInfo.getTag(), 1),
+                NumberToByteConverter.convert(constantInfo.getTag(), 1),
                 constantInfo.toBytes()
         ));
     }
 
-    public static void toFile(GeneratedCode code, String path) throws IOException {
-        FileOutputStream fos = new FileOutputStream(path);
+    public static void toFile(GeneratedCode code) throws IOException {
+        FileOutputStream fos = new FileOutputStream(code.getClassName() + ".class");
         new CodeToHexClassFileConverter(code).convert().forEach(aByte -> {
             try {
                 fos.write(aByte);

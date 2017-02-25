@@ -7,6 +7,10 @@ public class BinaryArithmeticOpNode extends BinaryOpNode {
         super(value, left, right);
     }
 
+    public BinaryArithmeticOpNode(String value) {
+        this(value, null, null);
+    }
+
     @Override
     public int generateCode(JvmBytecodeGenerator codeGenerator) {
         return codeGenerator.generate(this);

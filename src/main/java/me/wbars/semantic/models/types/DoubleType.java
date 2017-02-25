@@ -5,4 +5,9 @@ public class DoubleType implements Type {
     public String name() {
         return "Double";
     }
+
+    @Override
+    public int aType() {
+        return 7;
+    }
 }

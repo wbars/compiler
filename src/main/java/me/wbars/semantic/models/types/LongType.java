@@ -6,4 +6,14 @@ public class LongType implements Type{
     public String name() {
         return "Long";
     }
+
+    @Override
+    public String alias() {
+        return "J";
+    }
+
+    @Override
+    public int aType() {
+        return 11;
+    }
 }

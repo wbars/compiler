@@ -11,6 +11,12 @@ public class ExprNode extends BinaryOpNode {
         super(simpleExpr.getValue(), simpleExpr, null);
     }
 
+    public ExprNode() {
+        this(null, null, null);
+    }
+
+
+
     @Override
     public int generateCode(JvmBytecodeGenerator codeGenerator) {
         return codeGenerator.generate(this);

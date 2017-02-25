@@ -8,10 +8,12 @@ import java.util.List;
 public class GeneratedCode {
     private final List<CodeLine> lines;
     private final ConstantPool constantPool;
+    private final String className;
 
-    public GeneratedCode(List<CodeLine> lines, ConstantPool constantPool) {
+    public GeneratedCode(List<CodeLine> lines, ConstantPool constantPool, String className) {
         this.lines = lines;
         this.constantPool = constantPool;
+        this.className = className;
     }
 
     public List<CodeLine> getLines() {
@@ -28,5 +30,9 @@ public class GeneratedCode {
 
     public int getMaxLocals() {
         return 100;
+    }
+
+    public String getClassName() {
+        return className;
     }
 }

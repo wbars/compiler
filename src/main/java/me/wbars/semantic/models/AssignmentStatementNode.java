@@ -7,6 +7,10 @@ public class AssignmentStatementNode extends BinaryOpNode {
         super("", left, right);
     }
 
+    public AssignmentStatementNode() {
+        this(null, null);
+    }
+
     @Override
     public int generateCode(JvmBytecodeGenerator codeGenerator) {
         return codeGenerator.generate(this);

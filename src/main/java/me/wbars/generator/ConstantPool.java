@@ -34,7 +34,7 @@ public class ConstantPool {
         typeConstantMapping.put(TypeRegistry.INTEGER, (value) -> new IntegerConstantInfo(parseInt(value), constants.size()));
         typeConstantMapping.put(TypeRegistry.BOOLEAN, (value) -> new IntegerConstantInfo(parseBoolean(value) ? 1 : 0, constants.size()));
         typeConstantMapping.put(TypeRegistry.DOUBLE, (value) -> new DoubleConstantInfo(parseDouble(value), constants.size()));
-        typeConstantMapping.put(TypeRegistry.LONG, (value) -> new DoubleConstantInfo(parseLong(value), constants.size()));
+        typeConstantMapping.put(TypeRegistry.LONG, (value) -> new LongConstantInfo(parseLong(value), constants.size()));
         typeConstantMapping.put(TypeRegistry.STRING, (value) -> new StringConstantInfo(trimQuotes(value), getConstantIndex(trimQuotes(value), TypeRegistry.UTF8), constants.size()));
         typeConstantMapping.put(TypeRegistry.UTF8, s -> new Utf8ConstantInfo(s, constants.size()));
     }
@@ -70,6 +70,11 @@ public class ConstantPool {
 
     private <T extends ConstantInfo> T addToPool(T constantInfo) {
         constants.add(requireNonNull(constantInfo));
+        /*
+          All 8-byte constants take up two entries in the constant_pool table of the class file
+          so we reserve the following entry with unusable null value
+         */
+        if (constantInfo.getSize() == 8) constants.add(null);
         return constantInfo;
     }
 

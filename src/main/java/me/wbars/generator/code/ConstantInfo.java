@@ -8,4 +8,6 @@ public interface ConstantInfo {
     String getRawValue();
 
     List<Byte> toBytes();
+
+    int getSize();
 }
