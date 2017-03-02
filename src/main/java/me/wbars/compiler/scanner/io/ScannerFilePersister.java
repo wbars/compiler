@@ -72,8 +72,13 @@ public class ScannerFilePersister {
                 .reduce(ScannerFilePersister::commaConcat).orElse(""));
     }
 
-    public static TransitionTable fromFile(String path) throws IOException {
-        List<String> lines = Files.readAllLines(Paths.get(path));
+    public static TransitionTable fromFile(String path) {
+        List<String> lines = null;
+        try {
+            lines = Files.readAllLines(Paths.get(path));
+        } catch (IOException e) {
+            return null;
+        }
 
         int transitionsCount = Integer.parseInt(lines.get(0));
         Map<Integer, Map<Character, Integer>> transitions = getTransitions(lines.subList(1, transitionsCount + 1));

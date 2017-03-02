@@ -182,8 +182,9 @@ public class CodeToHexClassFileConverter {
         ));
     }
 
-    public static void toFile(GeneratedCode code) throws IOException {
-        FileOutputStream fos = new FileOutputStream(code.getClassName() + ".class");
+    public static String toFile(GeneratedCode code) throws IOException {
+        String className = code.getClassName() + ".class";
+        FileOutputStream fos = new FileOutputStream(className);
         new CodeToHexClassFileConverter(code).convert().forEach(aByte -> {
             try {
                 fos.write(aByte);
@@ -192,5 +193,6 @@ public class CodeToHexClassFileConverter {
             }
         });
         fos.close();
+        return code.getClassName();
     }
 }
