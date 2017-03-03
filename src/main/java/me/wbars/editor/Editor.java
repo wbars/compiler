@@ -4,7 +4,6 @@ import me.wbars.compiler.Compiler;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.io.*;
@@ -14,7 +13,7 @@ import java.nio.file.Paths;
 import static javax.swing.JOptionPane.showMessageDialog;
 
 public class Editor extends JFrame {
-    private JTextComponent textComponent;
+    private JEditorPane editorPane;
     private JScrollPane scrollPane;
     private JMenuBar menuBar;
     private JMenu menuFile;
@@ -23,7 +22,7 @@ public class Editor extends JFrame {
     private JMenuItem menuFileExit;
     private String selectedPath;
     private JMenuItem menuFileSaveAs;
-    private Compiler compiler;
+    private final Compiler compiler = new Compiler();
     private JMenu menuRun;
     private JMenuItem menuRunCompile;
     private JMenuItem menuRunRun;
@@ -48,16 +47,15 @@ public class Editor extends JFrame {
     }
 
     private void initCompilier() {
-        compiler = new Compiler();
         menuRun = new JMenu("Run");
         menuRunCompile = new JMenuItem("Compile");
         menuRunCompile.addActionListener(e -> {
-            showMessageDialog(null, "Done! File class: " + compiler.compile(textComponent.getText()));
+            showMessageDialog(null, "Done! File class: " + compiler.compile(editorPane.getText()));
         });
 
         menuRunRun = new JMenuItem("Run");
         menuRunRun.addActionListener(e -> {
-            String className = compiler.compile(textComponent.getText());
+            String className = compiler.compile(editorPane.getText());
             try {
                 showMessageDialog(null, execCommand("java -noverify " + className));
             } catch (IOException e1) {
@@ -116,7 +114,7 @@ public class Editor extends JFrame {
             if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
                 try {
                     selectedPath = chooser.getSelectedFile().getAbsolutePath();
-                    textComponent.setText(getFileContents(selectedPath));
+                    editorPane.setText(getFileContents(selectedPath));
                     setTitle(chooser.getSelectedFile().getName());
                     menuFileSave.setEnabled(true);
                 } catch (IOException e1) {
@@ -155,7 +153,7 @@ public class Editor extends JFrame {
         BufferedWriter writer = null;
         try {
             writer = new BufferedWriter(new FileWriter(selectedPath));
-            writer.write(textComponent.getText());
+            writer.write(editorPane.getText());
         } catch (IOException e1) {
             e1.printStackTrace();
         } finally {
@@ -171,15 +169,15 @@ public class Editor extends JFrame {
     }
 
     public void initTextComponent() {
-        textComponent = createTextComponent();
-        scrollPane = new JScrollPane(textComponent);
+        editorPane = createEditorComponent();
+        scrollPane = new JScrollPane(editorPane);
         getContentPane().add(scrollPane, BorderLayout.CENTER);
     }
 
 
-    private static JTextComponent createTextComponent() {
-        JTextArea ta = new JTextArea();
-        ta.setLineWrap(true);
-        return ta;
+    private JEditorPane createEditorComponent() {
+        JTextPane editorPane = new JTextPane(new CompilerDocument(compiler));
+        editorPane.setBackground(EditorStyle.backgroundColor);
+        return editorPane;
     }
 }

@@ -5,37 +5,12 @@ import me.wbars.compiler.parser.models.Node;
 import me.wbars.compiler.parser.models.Tokens;
 import me.wbars.compiler.scanner.models.PartOfSpeech;
 import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.utils.MyIterator;
 
 import java.util.List;
 import java.util.function.Supplier;
 
 public class Parser {
-    private static class MyIterator<T> {
-        private final List<T> value;
-        private int counter = 0;
-
-        private MyIterator(List<T> value) {
-            this.value = value;
-        }
-
-        private boolean notFinished() {
-            return counter < value.size();
-        }
-
-        private T current() {
-            return notFinished() ? value.get(counter) : null;
-        }
-
-        private void advance() {
-            counter++;
-        }
-
-        // can switch to LL(1)?
-        private T lookahead() {
-            return counter + 1 < value.size() ? value.get(counter + 1) : null;
-        }
-
-    }
 
     private final MyIterator<Token> tokens;
 
