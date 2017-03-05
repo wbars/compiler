@@ -13,6 +13,7 @@ begin
 
     write('c: ');
     writeln(c);
+    return;
 end;
 
 begin
@@ -30,4 +31,5 @@ begin
     writeln('b := c');
     b := c;
     printVars(a, b, c);
+    return;
 end.

@@ -36,6 +36,7 @@ public class Editor extends JFrame {
     // Create an editor.
     public Editor() {
         super("Editor");
+
         setSize(600, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);

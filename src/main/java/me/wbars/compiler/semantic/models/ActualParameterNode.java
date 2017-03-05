@@ -1,6 +1,7 @@
 package me.wbars.compiler.semantic.models;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -67,6 +68,11 @@ public class ActualParameterNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return Arrays.asList(first, second, third);
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return first.tokens();
     }
 
 }

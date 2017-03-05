@@ -18,4 +18,6 @@ begin
     write('Factorial of 10: ');
     writeln(fac(10));
     writeln(' ');
+
+    return;
 end.

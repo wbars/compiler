@@ -1,6 +1,8 @@
 package me.wbars.compiler.semantic.models;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -10,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class IfStmtNode extends ASTNode {
     private ExprNode condition;
@@ -72,6 +75,17 @@ public class IfStmtNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return Stream.of(singletonList(condition), trueBranch, falseBranch).flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                singletonList(Token.keyword(Tokens.IF)),
+                condition.tokens(),
+                singletonList(Token.keyword(Tokens.THEN)),
+                branch(trueBranch),
+                ifNotEmpty(falseBranch, nodes -> merge(singletonList(Token.keyword(Tokens.ELSE)), branch(falseBranch)))
+        );
     }
 
     @Override

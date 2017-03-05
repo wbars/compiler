@@ -1,5 +1,6 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -39,5 +40,10 @@ public class PointerTypeNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return Collections.singletonList(domainType);
+    }
+
+    @Override
+    public List<Token> tokens() {
+        throw new UnsupportedOperationException();
     }
 }

@@ -7,12 +7,12 @@ import me.wbars.compiler.utils.Registry;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
+import static me.wbars.compiler.utils.CollectionsUtils.flatten;
 
 /**
  * @see <a href="https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html">Jvm class file format</a>
@@ -57,13 +57,6 @@ public class CodeToHexClassFileConverter {
         INIT_METHOD = mainBootstrapMethod();
         MAIN_METHOD = mainMethod();
         SOURCE_FILE_ATTRIBUTE = sourceFileAttribute();
-    }
-
-    private List<Byte> flatten(List<List<Byte>> values) {
-        return values.stream()
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
     }
 
     public List<Byte> convert() {

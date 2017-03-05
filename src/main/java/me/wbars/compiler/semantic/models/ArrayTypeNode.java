@@ -1,5 +1,8 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.scanner.models.TokenFactory;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -9,6 +12,7 @@ import java.util.List;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.of;
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class ArrayTypeNode extends CompoundTypeNode {
     private List<SubrangeTypeNode> indexes;
@@ -54,7 +58,21 @@ public class ArrayTypeNode extends CompoundTypeNode {
                 .collect(toList());
     }
 
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                singletonList(Token.create(Tokens.IDENTIFIER, value)),
+                singletonList(TokenFactory.createRelOp("=")),
+                singletonList(Token.keyword(Tokens.ARRAY)),
+                singletonList(Token.keyword(Tokens.OF)),
+                componentType.tokens(),
+                singletonList(TokenFactory.createSemicolon())
+        );
+    }
+
     public int size() {
         return indexes.size();
     }
+
+
 }

@@ -1,11 +1,21 @@
 package me.wbars.compiler.semantic.models;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.scanner.models.TokenFactory;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static java.util.Collections.singletonList;
+import static me.wbars.compiler.utils.CollectionsUtils.flatten;
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public abstract class ASTNode {
     protected String value;
@@ -78,6 +88,7 @@ public abstract class ASTNode {
 
     }
 
+    @SuppressWarnings("unused")
     public String pretty() {
         return pretty(0);
     }
@@ -89,14 +100,63 @@ public abstract class ASTNode {
         }
         result += "|" + toString();
         if (children() != null) {
-            for (ASTNode child : children()) {
-                if (child != null) {
-                    result += "\n" + child.pretty(ident + 1);
-                }
-
-            }
+            result += children().stream()
+                    .filter(Objects::nonNull)
+                    .map(child -> child.pretty(ident + 1))
+                    .reduce((s, s2) -> s + "\n" + s2).orElse("");
 
         }
         return result;
+    }
+
+    public Map<ASTNode, List<Token>> getNodesTokens() {
+        return getNodesTokens(new HashMap<>());
+    }
+
+    public Map<ASTNode, List<Token>> getNodesTokens(Map<ASTNode, List<Token>> acc) {
+        acc.put(this, tokens());
+        if (children() != null) children().stream().filter(Objects::nonNull).forEach(c -> c.getNodesTokens(acc));
+        return acc;
+    }
+
+    public abstract List<Token> tokens();
+
+
+    protected List<Token> nestedTokens(List<? extends ASTNode> identifiers, Supplier<Token> delimerSupplier) {
+        return identifiers.stream()
+                .map(ASTNode::tokens)
+                .reduce((t, t2) -> merge(t, singletonList(delimerSupplier.get()), t2))
+                .orElse(Collections.emptyList());
+    }
+
+    protected List<Token> nestedTokens(List<? extends ASTNode> identifiers) {
+        return flatten(identifiers.stream()
+                .map(ASTNode::tokens)
+                .collect(Collectors.toList()));
+    }
+
+    protected List<Token> ifNotEmpty(List<? extends ASTNode> nodes, Function<List<? extends ASTNode>, List<Token>> s) {
+        return nodes.isEmpty() ? Collections.emptyList() : s.apply(nodes);
+    }
+
+
+    protected List<Token> nestedStatements(List<? extends ASTNode> nodes) {
+        return flatten(nodes.stream()
+                .map(n -> merge(n.tokens(), singletonList(TokenFactory.createSemicolon())))
+                .collect(Collectors.toList()));
+    }
+
+    protected List<Token> compoundStatement(List<? extends ASTNode> nodes) {
+        return nodes.size() > 1 ? (
+                merge(
+                        Collections.singletonList(Token.keyword(Tokens.BEGIN)),
+                        nestedStatements(nodes),
+                        Collections.singletonList(Token.keyword(Tokens.END))
+                )) : nestedStatements(nodes);
+    }
+
+
+    public List<Token> branch(List<ASTNode> branch) {
+        return branch.size() > 1 ? compoundStatement(branch) : nestedTokens(branch);
     }
 }

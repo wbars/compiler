@@ -4,12 +4,14 @@ import me.wbars.compiler.Compiler;
 import me.wbars.compiler.parser.models.Tokens;
 import me.wbars.compiler.scanner.models.PartOfSpeech;
 import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.semantic.models.ASTNode;
 import me.wbars.compiler.utils.Pair;
 
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -71,15 +73,16 @@ public class CompilerDocument extends DefaultStyledDocument {
         return new HashSet<>(Arrays.asList(tokens));
     }
 
-    private AttributeSet coloredAttribute(Color orange) {
+    private AttributeSet coloredAttribute(Color color) {
         StyleContext cont = StyleContext.getDefaultStyleContext();
-        return cont.addAttribute(cont.getEmptySet(), StyleConstants.Foreground, orange);
+        return cont.addAttribute(cont.getEmptySet(), StyleConstants.Foreground, color);
     }
 
     private void highlightSyntax() {
         String text = tryGetText();
         if (text == null) return;
-        Iterator<Token> tokenIterator = compiler.getScanner().scan(text).iterator();
+        Map<ASTNode, List<Token>> nodesTokens = new HashMap<>();
+        Iterator<Token> tokenIterator = compiler.getASTNode(text).tokens().iterator();
         for (int currentPos = 0; currentPos < text.length(); currentPos++) {
             Token token = tokenIterator.next();
             while (!notWhitespace(text.charAt(currentPos))) {

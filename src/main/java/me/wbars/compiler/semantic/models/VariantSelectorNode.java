@@ -1,5 +1,7 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,5 +36,10 @@ public class VariantSelectorNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return Arrays.asList(tagField, tagType, variantNode);
+    }
+
+    @Override
+    public List<Token> tokens() {
+        throw new UnsupportedOperationException();
     }
 }

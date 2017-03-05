@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public abstract class BinaryOpNode extends ASTNode {
+    private boolean withParens;
+
     public BinaryOpNode(String value, ASTNode left, ASTNode right) {
         super(value);
         this.left = left;
@@ -53,5 +55,13 @@ public abstract class BinaryOpNode extends ASTNode {
             return;
         }
         throw new UnsupportedOperationException();
+    }
+
+    public void setWithParens(boolean withParens) {
+        this.withParens = withParens;
+    }
+
+    public boolean isWithParens() {
+        return withParens;
     }
 }

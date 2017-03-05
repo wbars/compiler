@@ -8,6 +8,8 @@ import me.wbars.compiler.optimizer.OptimizeProcessor;
 import me.wbars.compiler.parser.Parser;
 import me.wbars.compiler.parser.models.Node;
 import me.wbars.compiler.scanner.Scanner;
+import me.wbars.compiler.scanner.io.FileGrammarReader;
+import me.wbars.compiler.scanner.io.GrammarReader;
 import me.wbars.compiler.scanner.io.ScannerFilePersister;
 import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.scanner.models.TransitionTable;
@@ -24,9 +26,9 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) throws IOException {
-//        GrammarReader stringGrammarReader = new FileGrammarReader("tokens.txt");
-//        TransitionTable table = stringGrammarReader.readTable();
-//        ScannerFilePersister.writeToFile(table, "table");
+        GrammarReader stringGrammarReader = new FileGrammarReader("tokens.txt");
+        TransitionTable table = stringGrammarReader.readTable();
+        ScannerFilePersister.writeToFile(table, "table");
         TransitionTable table1 = ScannerFilePersister.fromFile("table");
 
         List<Token> scan = Scanner.scan(getFileContents(args[0]), table1);

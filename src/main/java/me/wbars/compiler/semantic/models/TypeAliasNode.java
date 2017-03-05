@@ -1,5 +1,6 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 public class TypeAliasNode extends ASTNode {
     private ASTNode baseType;
+
     public TypeAliasNode(String name, ASTNode baseType) {
         super(name);
         this.baseType = baseType;
@@ -39,5 +41,10 @@ public class TypeAliasNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return Collections.singletonList(baseType);
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return baseType.tokens();
     }
 }

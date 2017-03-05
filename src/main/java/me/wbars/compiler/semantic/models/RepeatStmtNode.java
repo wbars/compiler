@@ -1,6 +1,8 @@
 package me.wbars.compiler.semantic.models;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -9,6 +11,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class RepeatStmtNode extends ASTNode {
     private List<ASTNode> statements;
@@ -55,6 +59,16 @@ public class RepeatStmtNode extends ASTNode {
     public List<ASTNode> children() {
         return Stream.of(statements, Collections.singletonList(untilExpression))
                 .flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                Collections.singletonList(Token.keyword(Tokens.REPEAT)),
+                nestedStatements(statements),
+                Collections.singletonList(Token.keyword(Tokens.UNTIL)),
+                untilExpression.tokens()
+        );
     }
 
     @Override

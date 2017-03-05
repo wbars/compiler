@@ -1,5 +1,7 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,6 +27,11 @@ public class RecordTypeNode extends ASTNode {
                 recordSections.stream().flatMap(Collection::stream).collect(Collectors.toList()),
                 variants
         ).flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        throw new UnsupportedOperationException();
     }
 
     public List<List<LiteralNode>> getRecordSections() {

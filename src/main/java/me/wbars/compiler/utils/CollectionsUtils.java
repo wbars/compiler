@@ -3,6 +3,7 @@ package me.wbars.compiler.utils;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CollectionsUtils {
@@ -19,5 +20,12 @@ public class CollectionsUtils {
     }
     public static <T> T first(List<T> list) {
         return list.isEmpty() ? null : list.get(0);
+    }
+
+    public static <T> List<T> flatten(List<List<T>> values) {
+        return values.stream()
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 }

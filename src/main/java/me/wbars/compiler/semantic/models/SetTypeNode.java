@@ -1,5 +1,6 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -16,6 +17,11 @@ public class SetTypeNode extends CompoundTypeNode {
 
     public SetTypeNode(String name, boolean packed) {
         this(name, null, packed);
+    }
+
+    @Override
+    public List<Token> tokens() {
+        throw new UnsupportedOperationException();
     }
 
     public void setBaseType(ASTNode baseType) {

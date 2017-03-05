@@ -1,12 +1,18 @@
 package me.wbars.compiler.semantic;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.ASTNode;
 import me.wbars.compiler.semantic.models.ExprNode;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
+import java.util.Collections;
 import java.util.List;
+
+import static java.util.Collections.emptyList;
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class ReturnStmtNode extends ASTNode {
     private ExprNode expr;
@@ -47,5 +53,13 @@ public class ReturnStmtNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return null;
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                Collections.singletonList(Token.keyword(Tokens.RETURN)),
+                (expr != null ? expr.tokens() : emptyList())
+        );
     }
 }

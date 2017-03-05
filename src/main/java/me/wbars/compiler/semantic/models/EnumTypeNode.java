@@ -1,5 +1,6 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -40,5 +41,10 @@ public class EnumTypeNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return identifiers.stream().map(e -> (ASTNode)e).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        throw new UnsupportedOperationException();
     }
 }

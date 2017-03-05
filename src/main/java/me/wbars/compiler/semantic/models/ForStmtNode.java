@@ -1,23 +1,29 @@
 package me.wbars.compiler.semantic.models;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.scanner.models.TokenFactory;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Arrays.asList;
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
+
 public class ForStmtNode extends ASTNode {
-    private  LiteralNode controlVar;
-    private  ExprNode initialValue;
-    private  ExprNode finalValue;
+    private IdentifierNode controlVar;
+    private ExprNode initialValue;
+    private ExprNode finalValue;
     private boolean increment;
     private List<ASTNode> statements;
 
-    public ForStmtNode(LiteralNode controlVar, ExprNode initialValue, ExprNode finalValue, boolean increment, List<ASTNode> statements) {
+    public ForStmtNode(IdentifierNode controlVar, ExprNode initialValue, ExprNode finalValue, boolean increment, List<ASTNode> statements) {
         super("");
         this.controlVar = controlVar;
         this.initialValue = initialValue;
@@ -30,7 +36,7 @@ public class ForStmtNode extends ASTNode {
         this(null, null, null, increment, null);
     }
 
-    public LiteralNode getControlVar() {
+    public IdentifierNode getControlVar() {
         return controlVar;
     }
 
@@ -50,7 +56,7 @@ public class ForStmtNode extends ASTNode {
         return statements;
     }
 
-    public void setControlVar(LiteralNode controlVar) {
+    public void setControlVar(IdentifierNode controlVar) {
         this.controlVar = controlVar;
     }
 
@@ -82,7 +88,7 @@ public class ForStmtNode extends ASTNode {
 
     @Override
     protected void replaceChild(int index, ASTNode node) {
-        if (index == 0) controlVar = (LiteralNode) node;
+        if (index == 0) controlVar = (IdentifierNode) node;
         if (index == 1) initialValue = (ExprNode) node;
         if (index == 2) finalValue = (ExprNode) node;
         statements.set(index - 3, node);
@@ -90,7 +96,21 @@ public class ForStmtNode extends ASTNode {
 
     @Override
     public List<ASTNode> children() {
-        return Stream.of(Arrays.asList(controlVar, initialValue, finalValue), statements)
+        return Stream.of(asList(controlVar, initialValue, finalValue), statements)
                 .flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                Collections.singletonList(Token.keyword(Tokens.FOR)),
+                controlVar.tokens(),
+                Collections.singletonList(TokenFactory.createAssignment()),
+                initialValue.tokens(),
+                Collections.singletonList(TokenFactory.createDirection(increment)),
+                finalValue.tokens(),
+                Collections.singletonList(Token.keyword(Tokens.DO)),
+                branch(statements)
+        );
     }
 }

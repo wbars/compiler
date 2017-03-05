@@ -23,6 +23,10 @@ public class Token {
         return new Token(PartOfSpeech.getOrCreate(posName), value);
     }
 
+    public static Token keyword(String posName) {
+        return create(posName, posName.toLowerCase());
+    }
+
     @Override
     public String toString() {
         return pos.name.toUpperCase() + "(" + value + ")";

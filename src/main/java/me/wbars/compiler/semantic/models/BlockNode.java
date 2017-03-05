@@ -1,6 +1,9 @@
 package me.wbars.compiler.semantic.models;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.scanner.models.TokenFactory;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -8,8 +11,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.of;
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class BlockNode extends ASTNode {
     private final List<LiteralNode> labels = new ArrayList<>();
@@ -67,7 +72,7 @@ public class BlockNode extends ASTNode {
 
         selectedIndex -= labels.size();
         if (index < varDeclarations.size()) {
-            varDeclarations.set(selectedIndex , (VarDeclarationNode) node);
+            varDeclarations.set(selectedIndex, (VarDeclarationNode) node);
             return;
         }
 
@@ -103,5 +108,35 @@ public class BlockNode extends ASTNode {
     public List<ASTNode> children() {
         return of(labels, varDeclarations, typeDefinitions, constDefinitions, procOrFunctionDeclarations, statements)
                 .flatMap(Collection::stream).collect(toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        List<Token> labelsPart = ifNotEmpty(labels, nodes -> merge(
+                singletonList(Token.keyword(Tokens.LABEL)),
+                nestedTokens(nodes, TokenFactory::comma),
+                singletonList(Token.keyword(Tokens.SEMICOLON)
+                ))
+        );
+        List<Token> constPart = ifNotEmpty(constDefinitions, nodes -> merge(
+                singletonList(Token.keyword(Tokens.CONST)),
+                nestedTokens(nodes, TokenFactory::comma)
+        ));
+        List<Token> typePart = ifNotEmpty(typeDefinitions, nodes -> merge(
+                singletonList(Token.keyword(Tokens.TYPE)),
+                nestedTokens(nodes, TokenFactory::comma)
+        ));
+        List<Token> varPart = ifNotEmpty(varDeclarations, nodes -> merge(
+                singletonList(Token.keyword(Tokens.VAR)),
+                nestedTokens(nodes)
+        ));
+        List<Token> funcProcPart = ifNotEmpty(procOrFunctionDeclarations, this::nestedTokens);
+        List<Token> stmtsPart = merge(
+                singletonList(Token.keyword(Tokens.BEGIN)),
+                ifNotEmpty(statements, this::nestedStatements)
+        );
+
+        return merge(labelsPart, constPart, typePart, varPart, funcProcPart, stmtsPart);
+
     }
 }

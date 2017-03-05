@@ -1,10 +1,16 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.scanner.models.TokenFactory;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class FuncOrProcHeadingNode extends ASTNode {
     private LiteralNode resultType;
@@ -48,6 +54,30 @@ public class FuncOrProcHeadingNode extends ASTNode {
 
     @Override
     public List<ASTNode> children() {
-        return Stream.of(Collections.singletonList(resultType), parameters).flatMap(Collection::stream).collect(Collectors.toList());
+        return Stream.of(Collections.singletonList(resultType), parameters)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        if (isProcedure()) {
+            return merge(
+                    Collections.singletonList(Token.keyword(Tokens.PROCEDURE)),
+                    Collections.singletonList(Token.create(Tokens.IDENTIFIER, value)),
+                    Collections.singletonList(TokenFactory.openParen()),
+                    nestedTokens(parameters, TokenFactory::comma),
+                    Collections.singletonList(TokenFactory.closeParen())
+                    );
+        }
+        return merge(
+                Collections.singletonList(Token.keyword(Tokens.FUNCTION)),
+                Collections.singletonList(Token.create(Tokens.IDENTIFIER, value)),
+                Collections.singletonList(TokenFactory.openParen()),
+                nestedTokens(parameters, TokenFactory::comma),
+                Collections.singletonList(TokenFactory.closeParen()),
+                Collections.singletonList(TokenFactory.createColon()),
+                resultType.tokens()
+        );
     }
 }

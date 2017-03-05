@@ -1,10 +1,16 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.scanner.models.TokenFactory;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class ProcOrFunctionDeclarationNode extends ASTNode {
     private FuncOrProcHeadingNode heading;
@@ -51,5 +57,16 @@ public class ProcOrFunctionDeclarationNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return Arrays.asList(heading, body);
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                heading.tokens(),
+                Collections.singletonList(TokenFactory.createSemicolon()),
+                body.tokens(),
+                Collections.singletonList(Token.keyword(Tokens.END)),
+                Collections.singletonList(TokenFactory.createSemicolon())
+        );
     }
 }

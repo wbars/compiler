@@ -3,7 +3,7 @@ package me.wbars.compiler.semantic.models;
 import java.util.Collections;
 import java.util.List;
 
-public class UnaryOpNode extends ASTNode {
+public abstract class UnaryOpNode extends ASTNode {
     public UnaryOpNode(String value) {
         super(value);
     }

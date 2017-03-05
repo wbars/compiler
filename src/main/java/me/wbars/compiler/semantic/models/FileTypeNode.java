@@ -1,5 +1,7 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -12,6 +14,11 @@ public class FileTypeNode extends CompoundTypeNode {
 
     public FileTypeNode(String name, boolean packed) {
         this(name, null, packed);
+    }
+
+    @Override
+    public List<Token> tokens() {
+        throw new UnsupportedOperationException();
     }
 
     public void setTypeDenoter(ASTNode typeDenoter) {

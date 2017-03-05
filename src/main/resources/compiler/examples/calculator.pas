@@ -24,4 +24,6 @@ begin
 
     write('(((1 + 2) * 12)) / 3 = ');
     writeln((((1 + 2) * 12)) / 3);
+
+    return;
 end.

@@ -21,8 +21,9 @@ import static me.wbars.compiler.utils.CollectionsUtils.last;
 public class ASTProcessor {
     private Stack<ASTNode> parents = new Stack<>();
 
-    private ExprNode parseExpr(Node expr) {
+    private ExprNode parseExpr(Node expr, boolean withParens) {
         return createInNestedScope(new ExprNode(), n -> {
+            n.setWithParens(withParens);
             if (expr.size() == 1) {
                 ASTNode simpleExpr = createWithParent(parseSimpleExpr(expr.head()));
                 n.setLeft(simpleExpr);
@@ -33,6 +34,10 @@ public class ASTProcessor {
                 n.setRight(createWithParent(parseSimpleExpr(expr.child(2))));
             }
         });
+    }
+
+    private ExprNode parseExpr(Node expr) {
+        return parseExpr(expr, false);
     }
 
     private ASTNode parseSimpleExpr(Node expr) {
@@ -75,7 +80,7 @@ public class ASTProcessor {
             if (hasName(expr.head(), "varAccess")) return parseRightAssociativeOp(expr.head());
             return createLiteralNode(expr.head());
         }
-        return createWithParent(parseExpr(expr.child(1)));
+        return createWithParent(parseExpr(expr.child(1), hasToken(expr, Tokens.OPEN_PAREN)));
     }
 
     private static boolean hasName(Node node, String... names) {
@@ -142,7 +147,7 @@ public class ASTProcessor {
             n.setBlock(createWithParent(parseBlock(parse.child(2))));
             if (heading.size() > 2) {
                 createWithParent(collectRightRecursiveCall(heading.child(3), this::parseLiteral))
-                        .forEach(n::addIdentifier);
+                        .forEach(n1 -> n.addIdentifier((IdentifierNode) n1));
             }
         });
     }
@@ -235,7 +240,7 @@ public class ASTProcessor {
 
         if (hasName(head, "forStmt")) {
             return createInNestedScope(new ForStmtNode(parseLiteral(head.child(4)).getValue().equals("to")), n -> {
-                n.setControlVar(createWithParent(parseLiteral(head.child(1))));
+                n.setControlVar(createWithParent((IdentifierNode)parseLiteral(head.child(1))));
                 n.setInitialValue(createWithParent(parseExpr(head.child(3))));
                 n.setFinalValue(createWithParent(parseExpr(head.child(5))));
                 n.setStatements(createWithParent(collectStatements(head.last().firstNonToken(Tokens.BEGIN))));

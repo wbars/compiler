@@ -1,12 +1,16 @@
 package me.wbars.compiler.semantic.models;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.scanner.models.TokenFactory;
 import me.wbars.compiler.semantic.models.types.ArrayType;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class ArrayLiteralNode extends ASTNode {
     private List<ExprNode> items;
@@ -46,6 +50,15 @@ public class ArrayLiteralNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return items.stream().map(e -> (ASTNode) e).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                Collections.singletonList(TokenFactory.openCurly()),
+                nestedTokens(items, TokenFactory::comma),
+                Collections.singletonList(TokenFactory.closeCurly())
+        );
     }
 
     @Override

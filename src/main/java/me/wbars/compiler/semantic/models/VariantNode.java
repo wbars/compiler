@@ -1,5 +1,7 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,5 +40,10 @@ public class VariantNode extends ASTNode {
     public List<ASTNode> children() {
         return Stream.of(caseConstants, Collections.singletonList(variantSelector), recordSections.stream().flatMap(Collection::stream).collect(Collectors.toList()))
                 .flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        throw new UnsupportedOperationException();
     }
 }

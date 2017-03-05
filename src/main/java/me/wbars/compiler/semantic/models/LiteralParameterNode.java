@@ -1,5 +1,7 @@
 package me.wbars.compiler.semantic.models;
 
+import me.wbars.compiler.scanner.models.Token;
+import me.wbars.compiler.scanner.models.TokenFactory;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -9,16 +11,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
 
 public class LiteralParameterNode extends ASTNode {
     private List<LiteralNode> identifiers;
     private LiteralNode nameIdentifier;
 
     public LiteralParameterNode(List<LiteralNode> identifiers, LiteralNode nameIdentifier) {
-        super(nameIdentifier != null ?nameIdentifier.getValue() : "");
+        super(nameIdentifier != null ? nameIdentifier.getValue() : "");
         this.identifiers = identifiers;
         this.nameIdentifier = nameIdentifier;
     }
+
     public LiteralParameterNode() {
         this(null, null);
     }
@@ -53,5 +57,14 @@ public class LiteralParameterNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return Stream.of(identifiers, singletonList(nameIdentifier)).flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                nestedTokens(identifiers, TokenFactory::comma),
+                singletonList(TokenFactory.createColon()),
+                nameIdentifier.tokens()
+        );
     }
 }

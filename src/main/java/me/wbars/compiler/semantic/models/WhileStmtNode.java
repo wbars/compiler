@@ -1,6 +1,8 @@
 package me.wbars.compiler.semantic.models;
 
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
+import me.wbars.compiler.parser.models.Tokens;
+import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
 
@@ -10,9 +12,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static me.wbars.compiler.utils.CollectionsUtils.merge;
+
 public class WhileStmtNode extends ASTNode {
-    private  ExprNode condition;
-    private  List<ASTNode> statements;
+    private ExprNode condition;
+    private List<ASTNode> statements;
 
     public WhileStmtNode(ExprNode condition, List<ASTNode> statements) {
         super(condition != null ? condition.getValue() : "");
@@ -47,6 +51,18 @@ public class WhileStmtNode extends ASTNode {
     @Override
     public List<ASTNode> children() {
         return Stream.of(Collections.singletonList(condition), statements).flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Token> tokens() {
+        return merge(
+                Collections.singletonList(Token.keyword(Tokens.WHILE)),
+                condition.tokens(),
+                Collections.singletonList(Token.keyword(Tokens.DO)),
+                Collections.singletonList(Token.keyword(Tokens.BEGIN)),
+                nestedStatements(statements),
+                Collections.singletonList(Token.keyword(Tokens.END))
+                );
     }
 
     public List<ASTNode> getStatements() {
