@@ -85,7 +85,6 @@ public abstract class ASTNode {
     @Override
     public String toString() {
         return getClass().getSimpleName().replaceAll("Node", "") + "(" + value + ")";
-
     }
 
     @SuppressWarnings("unused")
@@ -120,7 +119,6 @@ public abstract class ASTNode {
     }
 
     public abstract List<Token> tokens();
-
 
     protected List<Token> nestedTokens(List<? extends ASTNode> identifiers, Supplier<Token> delimerSupplier) {
         return identifiers.stream()

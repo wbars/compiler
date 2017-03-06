@@ -5,6 +5,8 @@ import me.wbars.compiler.parser.models.Tokens;
 import me.wbars.compiler.scanner.models.PartOfSpeech;
 import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.ASTNode;
+import me.wbars.compiler.semantic.models.BinaryOpNode;
+import me.wbars.compiler.utils.CollectionsUtils;
 import me.wbars.compiler.utils.Pair;
 
 import javax.swing.*;
@@ -78,11 +80,25 @@ public class CompilerDocument extends DefaultStyledDocument {
         return cont.addAttribute(cont.getEmptySet(), StyleConstants.Foreground, color);
     }
 
+    private AttributeSet coloredBackgroundAttrubute(Color color) {
+        StyleContext cont = StyleContext.getDefaultStyleContext();
+        return cont.addAttribute(cont.getEmptySet(), StyleConstants.Background, color);
+    }
+
     private void highlightSyntax() {
         String text = tryGetText();
         if (text == null) return;
-        Map<ASTNode, List<Token>> nodesTokens = new HashMap<>();
-        Iterator<Token> tokenIterator = compiler.getASTNode(text).tokens().iterator();
+        ASTNode program = compiler.getASTNode(text);
+        List<Token> tokens = program.getNodesTokens().get(program);
+        HashMap<Integer, Integer> optimizationHighlights = new HashMap<>();
+        dfs(program, tokens, optimizationHighlights);
+
+        Iterator<Token> tokenIterator = tokens.iterator();
+        int currentToken = 0;
+        int startBackgroundPos = -1;
+        int endBackgroundToken = -1;
+
+        //todo refactor
         for (int currentPos = 0; currentPos < text.length(); currentPos++) {
             Token token = tokenIterator.next();
             while (!notWhitespace(text.charAt(currentPos))) {
@@ -90,9 +106,37 @@ public class CompilerDocument extends DefaultStyledDocument {
                 if (currentPos >= text.length()) break;
             }
             int tokenLength = token.getValue().length();
+
+            if (startBackgroundPos < 0 && optimizationHighlights.containsKey(currentToken)) {
+                startBackgroundPos = currentPos;
+                endBackgroundToken = currentToken + optimizationHighlights.get(currentToken);
+            }
+
             String highlightedWord = text.substring(currentPos, currentPos + tokenLength);
             setCharacterAttributes(currentPos, tokenLength, tokenStyleMapper.apply(highlightedWord), false);
+            if (endBackgroundToken > 0 && currentToken == endBackgroundToken) {
+                setCharacterAttributes(startBackgroundPos, currentPos - startBackgroundPos, coloredBackgroundAttrubute(Color.pink), false);
+                startBackgroundPos = -1;
+                endBackgroundToken = -1;
+            }
             currentPos += tokenLength - 1;
+            currentToken++;
+        }
+
+    }
+
+    private void dfs(ASTNode node, List<Token> allTokens, Map<Integer, Integer> optimizationHighlights) {
+        if (node instanceof BinaryOpNode && ((BinaryOpNode)node).isWithParens()) {
+            List<Token> tokens = node.tokens();
+            int sublistIndex = CollectionsUtils.findSublistIndex(allTokens, tokens);
+            if (sublistIndex > 0) optimizationHighlights.put(sublistIndex, tokens.size());
+            return;
+        }
+        if (node == null || node.children() == null) return;
+        List<ASTNode> children = node.children();
+        for (ASTNode child : children) {
+            if (child == null) continue;
+            dfs(child, allTokens, optimizationHighlights);
         }
     }
 

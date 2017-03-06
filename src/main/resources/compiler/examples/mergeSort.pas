@@ -51,7 +51,7 @@ begin
     p := 0;
     mid := (high + low) / 2;
     if (len(a) < 2) then return;
-    l := new_array(mid , Integer);
+    l := new_array(mid, Integer);
     r := new_array((high - mid), Integer);
 
     for p := 0 to (len(l) - 1) do array_push(a[p], p, l);

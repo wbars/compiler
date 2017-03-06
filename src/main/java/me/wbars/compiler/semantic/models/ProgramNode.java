@@ -61,7 +61,9 @@ public class ProgramNode extends ASTNode {
 
     @Override
     public List<ASTNode> children() {
-        return Stream.of(identifiers, singletonList(block)).flatMap(Collection::stream).collect(Collectors.toList());
+        return Stream.of(identifiers, singletonList(block))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -28,7 +28,6 @@ public class ASTNodeTest {
         ProgramNode ast = astProcessor.parseProgram(parse);
 
         assertEquals(scan, ast.getNodesTokens().get(ast));
-        //todo handle parens
     }
 
     @Test
