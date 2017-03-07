@@ -22,9 +22,13 @@ public class ConstantFoldingQuickFix implements QuickFix {
         BinaryOpNode binaryOpNode = ObjectsUtils.tryCast(node, BinaryOpNode.class);
         if (binaryOpNode == null) return null;
 
-        ASTNode left = isAcceptable(binaryOpNode.getLeft(), true) ? apply(binaryOpNode.getLeft()) : binaryOpNode.getLeft();
-        ASTNode right = isAcceptable(binaryOpNode.getRight(), true) ? apply(binaryOpNode.getRight()) : binaryOpNode.getRight();
+        ASTNode left = fold(binaryOpNode.getLeft());
+        ASTNode right = fold(binaryOpNode.getRight());
         return right != null ? executeTrivialOperation(node.getValue(), left, right) : left;
+    }
+
+    public ASTNode fold(ASTNode node) {
+        return isAcceptable(node, true) ? apply(node) : node;
     }
 
     @Override

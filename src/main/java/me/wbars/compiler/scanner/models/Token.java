@@ -49,4 +49,8 @@ public class Token {
         result = 31 * result + value.hashCode();
         return result;
     }
+
+    public int valueLength() {
+        return value.length();
+    }
 }

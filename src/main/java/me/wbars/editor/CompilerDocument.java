@@ -110,17 +110,11 @@ public class CompilerDocument extends DefaultStyledDocument {
     }
 
     private void processSource(String text, List<Token> tokens, SourceCodeProcessor highlighter) {
-        int tokenPos = 0;
-        for (int textPos = 0; textPos < text.length(); textPos++) {
+
+        for (int textPos = 0, tokenPos = 0; textPos < text.length(); textPos++, tokenPos++) {
             textPos = skipSpaces(text, textPos);
-            if (textPos >= text.length()) break;
-            Token token = tokens.get(tokenPos);
-            int tokenLength = token.getValue().length();
-
             highlighter.accept(tokenPos, textPos);
-
-            textPos += tokenLength - 1;
-            tokenPos++;
+            textPos += tokens.get(tokenPos).valueLength() - 1;
         }
     }
 
@@ -161,15 +155,16 @@ public class CompilerDocument extends DefaultStyledDocument {
     private void highlightSyntax() {
         String text = tryGetText();
         if (text == null) return;
-        ASTNode program = compiler.getASTNode(text);
-        List<Token> tokens = program.getNodesTokens().get(program);
+        //        List<Token> tokens = program.getNodesTokens().get(program);
+        List<Token> tokens = compiler.getScanner().scan(text);
+
 
         registeredQuickfixes.clear();
         nodesPos.clear();
 
         setCharacterAttributes(0, text.length(), defaultAttribute, false);
         processSource(text, tokens, createWordHighlightProcessor(tokens));
-        processSource(text, tokens, createNodesPosProcessor(program, tokens));
+        processSource(text, tokens, createNodesPosProcessor(compiler.getASTNode(text), tokens));
         highlightQuickfixes();
     }
 
