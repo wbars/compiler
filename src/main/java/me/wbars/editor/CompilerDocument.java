@@ -5,9 +5,10 @@ import me.wbars.compiler.parser.models.Tokens;
 import me.wbars.compiler.scanner.models.PartOfSpeech;
 import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.semantic.models.ASTNode;
-import me.wbars.compiler.semantic.models.BinaryOpNode;
-import me.wbars.compiler.utils.CollectionsUtils;
 import me.wbars.compiler.utils.Pair;
+import me.wbars.compiler.utils.Registry;
+import me.wbars.editor.quickfix.ConstantFoldingQuickFix;
+import me.wbars.editor.quickfix.QuickFix;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -17,22 +18,43 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.reverseOrder;
+import static java.util.Comparator.comparingInt;
+import static java.util.stream.Collectors.toList;
+import static me.wbars.compiler.utils.CollectionsUtils.findSublistIndex;
+
 public class CompilerDocument extends DefaultStyledDocument {
     private final Compiler compiler;
-    private final Function<String, AttributeSet> tokenStyleMapper;
+    private final Function<Token, AttributeSet> tokenStyleMapper;
+    private final Map<PartOfSpeech, AttributeSet> tokensAttributes = getTokensAttributes();
+    private final AttributeSet defaultAttribute = getDefaultAttribute();
+    private final Registry<QuickFix> quickFixRegistry = createOptimizeProcessor();
+    private final Map<ASTNode, QuickFix> registeredQuickfixes = new HashMap<>();
+    private final Map<ASTNode, Pair<Integer, Integer>> nodesPos = new HashMap<>();
+
+
+    public Registry<QuickFix> createOptimizeProcessor() {
+        Registry<QuickFix> quickFixRegistry = new Registry<>();
+        quickFixRegistry.register("constant folding", new ConstantFoldingQuickFix());
+        return quickFixRegistry;
+    }
+
+    private AttributeSet getDefaultAttribute() {
+        StyleContext cont = StyleContext.getDefaultStyleContext();
+
+        SimpleAttributeSet attr = new SimpleAttributeSet();
+        attr.addAttribute(StyleConstants.Foreground, EditorStyle.fontColor);
+        attr.addAttribute(StyleConstants.Background, EditorStyle.backgroundColor);
+        return cont.addAttributes(cont.getEmptySet(), attr);
+    }
 
     public CompilerDocument(Compiler compiler) {
         this.compiler = compiler;
         tokenStyleMapper = getTokenStyleMapper();
     }
 
-    private Function<String, AttributeSet> getTokenStyleMapper() {
-        Map<PartOfSpeech, AttributeSet> tokensAttributes = getTokensAttributes();
-        AttributeSet defaultAttribute = coloredAttribute(EditorStyle.fontColor);
-        return s -> {
-            Token token = compiler.getScanner().scanWord(s);
-            return token != null ? tokensAttributes.getOrDefault(token.getPos(), defaultAttribute) : defaultAttribute;
-        };
+    private Function<Token, AttributeSet> getTokenStyleMapper() {
+        return token -> token != null ? tokensAttributes.getOrDefault(token.getPos(), defaultAttribute) : defaultAttribute;
     }
 
     private Map<PartOfSpeech, AttributeSet> getTokensAttributes() {
@@ -55,7 +77,9 @@ public class CompilerDocument extends DefaultStyledDocument {
                 PartOfSpeech.getOrCreate(Tokens.RELOP),
                 PartOfSpeech.getOrCreate(Tokens.DO),
                 PartOfSpeech.getOrCreate(Tokens.THEN),
-                PartOfSpeech.getOrCreate(Tokens.END)
+                PartOfSpeech.getOrCreate(Tokens.END),
+                PartOfSpeech.getOrCreate(Tokens.IF),
+                PartOfSpeech.getOrCreate(Tokens.ELSE)
                 )
         );
         reverseTokensAttributes.put(numberColor, setFrom(
@@ -85,59 +109,119 @@ public class CompilerDocument extends DefaultStyledDocument {
         return cont.addAttribute(cont.getEmptySet(), StyleConstants.Background, color);
     }
 
+    private void processSource(String text, List<Token> tokens, SourceCodeProcessor highlighter) {
+        int tokenPos = 0;
+        for (int textPos = 0; textPos < text.length(); textPos++) {
+            textPos = skipSpaces(text, textPos);
+            if (textPos >= text.length()) break;
+            Token token = tokens.get(tokenPos);
+            int tokenLength = token.getValue().length();
+
+            highlighter.accept(tokenPos, textPos);
+
+            textPos += tokenLength - 1;
+            tokenPos++;
+        }
+    }
+
+    private int skipSpaces(String text, int textPos) {
+        while (textPos < text.length() && !notWhitespace(text.charAt(textPos))) {
+            textPos++;
+        }
+        return textPos;
+    }
+
+    private SourceCodeProcessor createNodesPosProcessor(ASTNode program, List<Token> tokens) {
+        Map<Integer, Pair<Integer, ASTNode>> optimizationHighlights = getOptimizationHighlights(program, tokens);
+        final int[] startBackgroundPos = {-1};
+        final int[] endBackgroundToken = {-1};
+        final ASTNode[] currentNode = {null};
+
+        return (tokenPos, currentPos) -> {
+            if (startBackgroundPos[0] < 0 && optimizationHighlights.containsKey(tokenPos)) {
+                startBackgroundPos[0] = currentPos;
+                Pair<Integer, ASTNode> pair = optimizationHighlights.get(tokenPos);
+                endBackgroundToken[0] = tokenPos + pair.first();
+                currentNode[0] = pair.second();
+            } else if (endBackgroundToken[0] > 0 && tokenPos == endBackgroundToken[0]) {
+                nodesPos.put(currentNode[0], new Pair<>(startBackgroundPos[0], currentPos));
+                startBackgroundPos[0] = -1;
+                endBackgroundToken[0] = -1;
+            }
+        };
+    }
+
+    private SourceCodeProcessor createWordHighlightProcessor(List<Token> tokens) {
+        return (tokenPos, currentPos) -> {
+            Token wordToken = tokens.get(tokenPos);
+            setCharacterAttributes(currentPos, wordToken.getValue().length(), tokenStyleMapper.apply(wordToken), false);
+        };
+    }
+
     private void highlightSyntax() {
         String text = tryGetText();
         if (text == null) return;
         ASTNode program = compiler.getASTNode(text);
         List<Token> tokens = program.getNodesTokens().get(program);
-        HashMap<Integer, Integer> optimizationHighlights = new HashMap<>();
-        dfs(program, tokens, optimizationHighlights);
 
-        Iterator<Token> tokenIterator = tokens.iterator();
-        int currentToken = 0;
-        int startBackgroundPos = -1;
-        int endBackgroundToken = -1;
+        registeredQuickfixes.clear();
+        nodesPos.clear();
 
-        //todo refactor
-        for (int currentPos = 0; currentPos < text.length(); currentPos++) {
-            Token token = tokenIterator.next();
-            while (!notWhitespace(text.charAt(currentPos))) {
-                currentPos++;
-                if (currentPos >= text.length()) break;
-            }
-            int tokenLength = token.getValue().length();
-
-            if (startBackgroundPos < 0 && optimizationHighlights.containsKey(currentToken)) {
-                startBackgroundPos = currentPos;
-                endBackgroundToken = currentToken + optimizationHighlights.get(currentToken);
-            }
-
-            String highlightedWord = text.substring(currentPos, currentPos + tokenLength);
-            setCharacterAttributes(currentPos, tokenLength, tokenStyleMapper.apply(highlightedWord), false);
-            if (endBackgroundToken > 0 && currentToken == endBackgroundToken) {
-                setCharacterAttributes(startBackgroundPos, currentPos - startBackgroundPos, coloredBackgroundAttrubute(Color.pink), false);
-                startBackgroundPos = -1;
-                endBackgroundToken = -1;
-            }
-            currentPos += tokenLength - 1;
-            currentToken++;
-        }
-
+        setCharacterAttributes(0, text.length(), defaultAttribute, false);
+        processSource(text, tokens, createWordHighlightProcessor(tokens));
+        processSource(text, tokens, createNodesPosProcessor(program, tokens));
+        highlightQuickfixes();
     }
 
-    private void dfs(ASTNode node, List<Token> allTokens, Map<Integer, Integer> optimizationHighlights) {
-        if (node instanceof BinaryOpNode && ((BinaryOpNode)node).isWithParens()) {
-            List<Token> tokens = node.tokens();
-            int sublistIndex = CollectionsUtils.findSublistIndex(allTokens, tokens);
-            if (sublistIndex > 0) optimizationHighlights.put(sublistIndex, tokens.size());
+    private void highlightQuickfixes() {
+        nodesPos.values()
+                .forEach(pair -> setCharacterAttributes(pair.first(), pair.second() - pair.first(), coloredBackgroundAttrubute(Color.lightGray), false));
+    }
+
+    private Map<Integer, Pair<Integer, ASTNode>> getOptimizationHighlights(ASTNode node, List<Token> allTokens) {
+        Map<Integer, Pair<Integer, ASTNode>> result = new HashMap<>();
+        quickFixRegistry.values().forEach(quickFix -> {
+            List<ASTNode> allNodes = collectNodes(node, quickFix).stream()
+                    .sorted(reverseOrder(comparingInt(value -> value.tokens().size())))
+                    .collect(toList());
+
+            List<Pair<Integer, Integer>> highlightedTokensPos = new ArrayList<>();
+            allNodes.forEach(n -> registerQuickfix(n, allTokens, quickFix, result, highlightedTokensPos));
+        });
+        return result;
+    }
+
+    private List<ASTNode> collectNodes(ASTNode node, QuickFix quickFix) {
+        List<ASTNode> result = new ArrayList<>();
+        dfs(node, result, quickFix);
+        return result;
+    }
+
+    private void dfs(ASTNode node,
+                     List<ASTNode> acc,
+                     QuickFix quickFix
+    ) {
+        if (node == null || node.children() == null) return;
+        if (quickFix.isAcceptable(node)) {
+            acc.add(node);
             return;
         }
-        if (node == null || node.children() == null) return;
-        List<ASTNode> children = node.children();
-        for (ASTNode child : children) {
-            if (child == null) continue;
-            dfs(child, allTokens, optimizationHighlights);
-        }
+        node.children().stream()
+                .filter(Objects::nonNull)
+                .forEach(child -> dfs(child, acc, quickFix));
+    }
+
+    private void registerQuickfix(ASTNode node, List<Token> allTokens, QuickFix quickFix, Map<Integer, Pair<Integer, ASTNode>> optimizationHighlights, List<Pair<Integer, Integer>> highlightedTokensPos) {
+        List<Token> tokens = node.tokens();
+        optimizationHighlights.put(getNodeTokensStartIndex(allTokens, highlightedTokensPos, tokens), new Pair<>(tokens.size(), node));
+        registeredQuickfixes.put(node, quickFix);
+        return;
+    }
+
+    private int getNodeTokensStartIndex(List<Token> allTokens, List<Pair<Integer, Integer>> highlightedTokensPos, List<Token> tokens) {
+        int tokensStartIndex = findSublistIndex(allTokens, tokens, highlightedTokensPos);
+        highlightedTokensPos.add(new Pair<>(tokensStartIndex, tokensStartIndex + tokens.size()));
+        return tokensStartIndex;
     }
 
     private String tryGetText() {
@@ -160,5 +244,39 @@ public class CompilerDocument extends DefaultStyledDocument {
     public void remove(int offs, int len) throws BadLocationException {
         super.remove(offs, len);
         SwingUtilities.invokeLater(this::highlightSyntax);
+    }
+
+    public void runOptimizations() {
+        if (registeredQuickfixes.isEmpty()) return;
+        Pair<Integer, Integer> nodePos = nodesPos.values().iterator().next();
+        runQuickFix(nodePos);
+        highlightSyntax();
+        runOptimizations();
+    }
+
+    public void runSelectedOptimisation(int caretPosition) {
+        nodesPos.entrySet().stream()
+                .filter(e -> e.getValue().first() <= caretPosition && caretPosition <= e.getValue().second())
+                .map(Map.Entry::getValue)
+                .findAny().ifPresent(this::runQuickFix);
+    }
+
+
+    public void runQuickFix(Pair<Integer, Integer> nodePos) {
+        ASTNode node = nodesPos.entrySet().stream()
+                .filter(e -> e.getValue().equals(nodePos))
+                .map(Map.Entry::getKey)
+                .findAny().orElse(null);
+        QuickFix quickFix = registeredQuickfixes.get(node);
+        try {
+            replace(nodePos.first(), nodePos.second() - nodePos.first(), getText(quickFix.apply(node)), SimpleAttributeSet.EMPTY);
+        } catch (BadLocationException ignored) {
+        }
+    }
+
+    private String getText(ASTNode node) {
+        return node.tokens().stream()
+                .map(Token::getValue).reduce((s, s2) -> s + " " + s2)
+                .orElse("");
     }
 }

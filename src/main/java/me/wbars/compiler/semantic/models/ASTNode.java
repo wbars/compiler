@@ -67,11 +67,12 @@ public abstract class ASTNode {
         return children().get(i);
     }
 
-    public void replace(ASTNode node) {
+    public ASTNode replace(ASTNode node) {
         int thisIndex = IntStream.range(0, parent.children().size()).boxed()
                 .filter(i -> parent.child(i) == this).findAny()
                 .orElseThrow(IllegalStateException::new);
         parent.replaceChild(thisIndex, node);
+        return node;
     }
 
     protected abstract void replaceChild(int index, ASTNode node);

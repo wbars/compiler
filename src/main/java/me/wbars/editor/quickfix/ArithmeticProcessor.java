@@ -1,4 +1,4 @@
-package me.wbars.compiler.optimizer;
+package me.wbars.editor.quickfix;
 
 import me.wbars.compiler.semantic.models.types.Type;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;

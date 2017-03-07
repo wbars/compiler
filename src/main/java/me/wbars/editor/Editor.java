@@ -1,6 +1,7 @@
 package me.wbars.editor;
 
 import me.wbars.compiler.Compiler;
+import me.wbars.compiler.utils.ObjectsUtils;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -26,6 +27,8 @@ public class Editor extends JFrame {
     private JMenu menuRun;
     private JMenuItem menuRunCompile;
     private JMenuItem menuRunRun;
+    private JMenuItem menuRunQuickfixes;
+    private JMenuItem menuRunSelectedQuickfix;
 
     public static void main(String[] args) {
         Editor editor = new Editor();
@@ -64,8 +67,24 @@ public class Editor extends JFrame {
             }
         });
 
+        menuRunQuickfixes = new JMenuItem("Run quickfixes");
+        menuRunQuickfixes.addActionListener(e -> {
+            CompilerDocument compilerDocument = ObjectsUtils.tryCast(editorPane.getDocument(), CompilerDocument.class);
+            if (compilerDocument == null) throw new IllegalStateException();
+            compilerDocument.runOptimizations();
+        });
+
+        menuRunSelectedQuickfix = new JMenuItem("Run selected quickfix");
+        menuRunSelectedQuickfix.addActionListener(e -> {
+            CompilerDocument compilerDocument = ObjectsUtils.tryCast(editorPane.getDocument(), CompilerDocument.class);
+            if (compilerDocument == null) throw new IllegalStateException();
+            compilerDocument.runSelectedOptimisation(editorPane.getCaretPosition());
+        });
+
         menuRun.add(menuRunCompile);
         menuRun.add(menuRunRun);
+        menuRun.add(menuRunQuickfixes);
+        menuRun.add(menuRunSelectedQuickfix);
         menuBar.add(menuRun);
     }
 

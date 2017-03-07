@@ -3,8 +3,6 @@ package me.wbars.compiler;
 import me.wbars.compiler.generator.CodeToHexClassFileConverter;
 import me.wbars.compiler.generator.JvmBytecodeGenerator;
 import me.wbars.compiler.generator.code.GeneratedCode;
-import me.wbars.compiler.optimizer.ConstantFoldingOptimizer;
-import me.wbars.compiler.optimizer.OptimizeProcessor;
 import me.wbars.compiler.parser.Parser;
 import me.wbars.compiler.parser.models.Node;
 import me.wbars.compiler.scanner.Scanner;
@@ -35,10 +33,6 @@ public class Compiler {
         TypeRegistry typeRegistry = new TypeRegistry();
         ast.getProcessedType(typeRegistry);
 
-        OptimizeProcessor optimizeProcessor = new OptimizeProcessor();
-        optimizeProcessor.register("constant folding", new ConstantFoldingOptimizer());
-        optimizeProcessor.process(ast);
-
         GeneratedCode generatedCode = JvmBytecodeGenerator.generateCode(ast);
         try {
             return CodeToHexClassFileConverter.toFile(generatedCode);
@@ -47,9 +41,13 @@ public class Compiler {
         }
     }
 
+
     public ASTNode getASTNode(String content) {
         ASTProcessor astProcessor = new ASTProcessor();
-        return astProcessor.parseProgram(Parser.parse(scanner.scan(content)));
+        ProgramNode programNode = astProcessor.parseProgram(Parser.parse(scanner.scan(content)));
+        TypeRegistry typeRegistry = new TypeRegistry();
+        programNode.getProcessedType(typeRegistry);
+        return programNode;
     }
 
     public Scanner getScanner() {

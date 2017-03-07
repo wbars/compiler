@@ -1,6 +1,9 @@
 package me.wbars.compiler.utils;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -30,8 +33,9 @@ public class CollectionsUtils {
                 .collect(Collectors.toList());
     }
 
-    public static <T> int findSublistIndex(List<T> base, List<T> search) {
+    public static <T> int findSublistIndex(List<T> base, List<T> search, List<Pair<Integer, Integer>> rangesForSkip) {
         return IntStream.range(0, base.size() - search.size()).boxed()
+                .filter(i -> rangesForSkip.stream().noneMatch(p -> p.first() <= i && i <= p.second()))
                 .filter(i -> base.subList(i, i + search.size()).equals(search))
                 .findFirst().orElse(-1);
     }
