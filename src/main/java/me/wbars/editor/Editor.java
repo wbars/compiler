@@ -198,6 +198,7 @@ public class Editor extends JFrame {
     private JEditorPane createEditorComponent() {
         JTextPane editorPane = new JTextPane(new CompilerDocument(compiler));
         editorPane.setBackground(EditorStyle.backgroundColor);
+        editorPane.setCaretColor(EditorStyle.caretColor);
         return editorPane;
     }
 }

@@ -8,4 +8,5 @@ public class EditorStyle {
     public static final Color stringColor = new Color(0xA5, 0xC2, 0x5C);
     public static final Color backgroundColor = new Color(0x2B, 0x2B, 0x2B);
     public static final Color fontColor = new Color(0xA9, 0xB7, 0xC6);
+    public static Color caretColor = Color.white;
 }
