@@ -42,7 +42,17 @@ public class ConstantFoldingQuickFix implements QuickFix {
 
         BinaryOpNode binaryOpNode = ObjectsUtils.tryCast(node, BinaryOpNode.class);
         return binaryOpNode != null
+                && !(isNonAssociativeOperation(binaryOpNode.getParent()) && isNonAssociativeOperation(binaryOpNode))
                 && isAcceptable(binaryOpNode.getLeft(), true)
                 && ((binaryOpNode.getRight() == null && considerLiterals) || isAcceptable(binaryOpNode.getRight(), true));
+    }
+
+    private boolean isNonAssociativeOperation(ASTNode node) {
+        BinaryOpNode binaryOpNode = ObjectsUtils.tryCast(node, BinaryOpNode.class);
+        return binaryOpNode != null && binaryOpNode.getRight() != null && !isAssociative(binaryOpNode.getValue());
+    }
+
+    private boolean isAssociative(String operation) {
+        return operation.equals("+") || operation.equals("*");
     }
 }
