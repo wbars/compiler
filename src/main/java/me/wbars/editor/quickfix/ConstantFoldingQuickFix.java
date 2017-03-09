@@ -27,7 +27,7 @@ public class ConstantFoldingQuickFix implements QuickFix {
         return right != null ? executeTrivialOperation(node.getValue(), left, right) : left;
     }
 
-    public ASTNode fold(ASTNode node) {
+    private ASTNode fold(ASTNode node) {
         return isAcceptable(node, true) ? apply(node) : node;
     }
 

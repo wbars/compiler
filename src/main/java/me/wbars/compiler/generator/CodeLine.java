@@ -1,5 +1,7 @@
 package me.wbars.compiler.generator;
 
+import me.wbars.compiler.utils.ObjectsUtils;
+
 public class CodeLine {
     private final OpCommand command;
     private final Integer argument;
@@ -27,6 +29,6 @@ public class CodeLine {
 
     @Override
     public String toString() {
-        return argument == null ? String.valueOf(command) : command + " " + argument;
+        return argument == null ? String.valueOf(command) : ObjectsUtils.spaceConcat(command, argument);
     }
 }

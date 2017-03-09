@@ -2,6 +2,7 @@ package me.wbars.compiler.scanner.io;
 
 import me.wbars.compiler.scanner.models.PartOfSpeech;
 import me.wbars.compiler.scanner.models.TransitionTable;
+import me.wbars.compiler.utils.ObjectsUtils;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -22,10 +23,6 @@ public class ScannerFilePersister {
         lines.addAll(getTransitionTable(table.getTransitions()));
         lines.addAll(getPosTable(table.getPosMap()));
         return lines;
-    }
-
-    private static String commaConcat(String s1, String s2) {
-        return s1 + " " + s2;
     }
 
     private static String assignConcat(String s1, String s2) {
@@ -50,7 +47,7 @@ public class ScannerFilePersister {
     private static String getTransitionsSection(Integer state, Map<Character, Integer> transitions) {
         String edges = transitions.entrySet().stream()
                 .map(e -> e.getKey() + "" + e.getValue())
-                .reduce(ScannerFilePersister::commaConcat).orElse("");
+                .reduce(ObjectsUtils::spaceConcat).orElse("");
         return assignConcat(state.toString(), edges);
     }
 
@@ -69,7 +66,7 @@ public class ScannerFilePersister {
     private static String getPosTerminalsSection(PartOfSpeech pos, Set<Integer> terminals) {
         return assignConcat(pos.name, terminals.stream()
                 .map(Object::toString)
-                .reduce(ScannerFilePersister::commaConcat).orElse(""));
+                .reduce(ObjectsUtils::spaceConcat).orElse(""));
     }
 
     public static TransitionTable fromFile(String path) {

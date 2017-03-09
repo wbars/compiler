@@ -5,6 +5,7 @@ import me.wbars.compiler.scanner.models.Token;
 import me.wbars.compiler.scanner.models.TokenFactory;
 import me.wbars.compiler.semantic.models.types.ArrayType;
 import me.wbars.compiler.semantic.models.types.TypeRegistry;
+import me.wbars.compiler.utils.ObjectsUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -16,7 +17,7 @@ public class ArrayLiteralNode extends ASTNode {
     private List<ExprNode> items;
 
     public ArrayLiteralNode(List<ExprNode> items) {
-        super(items.stream().map(ASTNode::getValue).reduce((s, s2) -> s + " " + s2).orElse(""));
+        super(items.stream().map(ASTNode::getValue).reduce(ObjectsUtils::spaceConcat).orElse(""));
         this.items = items;
     }
 
