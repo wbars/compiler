@@ -6,10 +6,15 @@ import me.wbars.compiler.utils.ObjectsUtils;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
@@ -29,6 +34,8 @@ public class Editor extends JFrame {
     private JMenuItem menuRunRun;
     private JMenuItem menuRunQuickfixes;
     private JMenuItem menuRunSelectedQuickfix;
+    private JPopupMenu autocompletePopup;
+    private List<JMenuItem> autocompletePopupItems = new ArrayList<>();
 
     public static void main(String[] args) {
         Editor editor = new Editor();
@@ -36,8 +43,7 @@ public class Editor extends JFrame {
         editor.setVisible(true);
     }
 
-    // Create an editor.
-    public Editor() {
+    private Editor() {
         super("Editor");
 
         setSize(600, 600);
@@ -47,10 +53,10 @@ public class Editor extends JFrame {
 
         initTextComponent();
         initMenuBar();
-        initCompilier();
+        initCompiler();
     }
 
-    private void initCompilier() {
+    private void initCompiler() {
         menuRun = new JMenu("Run");
         menuRunCompile = new JMenuItem("Compile");
         menuRunCompile.addActionListener(e -> {
@@ -179,7 +185,8 @@ public class Editor extends JFrame {
         } finally {
             try {
                 if (writer != null) writer.close();
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -196,9 +203,85 @@ public class Editor extends JFrame {
 
 
     private JEditorPane createEditorComponent() {
-        JTextPane editorPane = new JTextPane(new CompilerDocument(compiler));
+        CompilerDocument doc = new CompilerDocument(compiler);
+        JTextPane editorPane = new JTextPane(doc);
         editorPane.setBackground(EditorStyle.backgroundColor);
         editorPane.setCaretColor(EditorStyle.caretColor);
+
+        autocompletePopup = new JPopupMenu("Autocomplete");
+        resetAutocompletePopup();
+
+        KeyListener textInputListener = new KeyAdapter() {
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                SingleSelectionModel selectionModel = autocompletePopup.getSelectionModel();
+                if (!autocompletePopup.isVisible()) return;
+                if (e.getExtendedKeyCode() == KeyEvent.VK_ENTER) {
+                    String replace = autocompletePopupItems.get(selectionModel.getSelectedIndex()).getText();
+                    replaceCurrentChunk(replace, doc, editorPane);
+                    e.consume();
+                    return;
+                }
+                if (e.getExtendedKeyCode() == KeyEvent.VK_UP) {
+                    selectionModel.setSelectedIndex(Math.max(0, selectionModel.getSelectedIndex() - 1));
+                    e.consume();
+                    return;
+                }
+                if (e.getExtendedKeyCode() == KeyEvent.VK_DOWN) {
+                    selectionModel.setSelectedIndex(Math.min(autocompletePopupItems.size() - 1, selectionModel.getSelectedIndex() + 1));
+                    e.consume();
+                    return;
+                }
+
+                if (e.getExtendedKeyCode() == KeyEvent.VK_ESCAPE) {
+                    resetAutocompletePopup();
+                    e.consume();
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                SingleSelectionModel selectionModel = autocompletePopup.getSelectionModel();
+
+                resetAutocompletePopup();
+
+                Point currentPoint = editorPane.getCaret().getMagicCaretPosition();
+                if (currentPoint == null) return;
+
+                List<String> currentAutocompleteList = doc.getCurrentAutocompleteList(editorPane.getCaretPosition() - 1);
+                if (currentAutocompleteList.isEmpty()) return;
+
+                currentAutocompleteList.forEach(s -> {
+                    JMenuItem menuItem = new JMenuItem(s);
+                    autocompletePopup.add(menuItem);
+                    autocompletePopupItems.add(menuItem);
+                    menuItem.addActionListener(e1 -> replaceCurrentChunk(s, doc, editorPane));
+                });
+                selectionModel.setSelectedIndex(0);
+
+                if (autocompletePopup.isVisible()) {
+                    SwingUtilities.convertPointToScreen(currentPoint, editorPane);
+                    autocompletePopup.setLocation(currentPoint.x, currentPoint.y + 20);
+                } else {
+                    autocompletePopup.show(editorPane, currentPoint.x, currentPoint.y + 20);
+                }
+            }
+        };
+        editorPane.addKeyListener(textInputListener);
+
         return editorPane;
+    }
+
+    public void replaceCurrentChunk(String replace, CompilerDocument doc, JTextPane editorPane) {
+        doc.replaceCurrentChunk(editorPane.getCaretPosition() - 1, replace);
+        resetAutocompletePopup();
+    }
+
+    public void resetAutocompletePopup() {
+        autocompletePopup.setVisible(false);
+        autocompletePopup.setFocusable(false);
+        autocompletePopup.removeAll();
+        autocompletePopupItems.clear();
     }
 }

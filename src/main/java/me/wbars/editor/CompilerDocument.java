@@ -20,11 +20,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.reverseOrder;
 import static java.util.Comparator.comparingInt;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.*;
 import static me.wbars.compiler.parser.models.Tokens.*;
 import static me.wbars.compiler.utils.CollectionsUtils.findSublistIndex;
 
@@ -45,6 +46,23 @@ public class CompilerDocument extends DefaultStyledDocument {
     private final Map<ASTNode, QuickFix> registeredQuickfixes = new HashMap<>();
     private final Map<ASTNode, Pair<Integer, Integer>> registeredNodesTokenPos = new HashMap<>();
     private final Map<ASTNode, Pair<Integer, Integer>> registeredNodesTextPos = new HashMap<>();
+    private static final List<String> keywords = asList(
+            PROGRAM,
+            TYPE,
+            ARRAY,
+            OF,
+            VAR,
+            PROCEDURE,
+            BEGIN,
+            ASSIGNMENT,
+            WHILE,
+            RELOP,
+            DO,
+            THEN,
+            END,
+            IF,
+            ELSE
+    );
 
     private Registry<QuickFix> createOptimizeProcessor() {
         Registry<QuickFix> quickFixRegistry = new Registry<>();
@@ -77,23 +95,7 @@ public class CompilerDocument extends DefaultStyledDocument {
         AttributeSet numberColor = coloredAttribute(EditorStyle.numberColor);
         AttributeSet stringColor = coloredAttribute(EditorStyle.stringColor);
 
-        reverseTokensAttributes.put(keywordColor, newPartOfSpeechSet(
-                PROGRAM,
-                TYPE,
-                ARRAY,
-                OF,
-                VAR,
-                PROCEDURE,
-                BEGIN,
-                ASSIGNMENT,
-                WHILE,
-                RELOP,
-                DO,
-                THEN,
-                END,
-                IF,
-                ELSE
-        ));
+        reverseTokensAttributes.put(keywordColor, newPartOfSpeechSet(keywords.toArray(new String[]{})));
         reverseTokensAttributes.put(numberColor, newPartOfSpeechSet(
                 UNSIGNED_INTEGER,
                 REALNUMBER
@@ -179,6 +181,8 @@ public class CompilerDocument extends DefaultStyledDocument {
 
     private SourceCodeProcessor createWordHighlightProcessor(List<Token> tokens) {
         return (tokenPos, currentPos) -> {
+            if (tokenPos >= tokens.size()) return;
+
             Token wordToken = tokens.get(tokenPos);
             setCharacterAttributes(currentPos, wordToken.getValue().length(), tokenStyleMapper.apply(wordToken), false);
         };
@@ -314,5 +318,45 @@ public class CompilerDocument extends DefaultStyledDocument {
                 .map(Token::getValue)
                 .reduce(ObjectsUtils::spaceConcat)
                 .orElse("");
+    }
+
+    List<String> getCurrentAutocompleteList(int caretPosition) {
+        String name = getCurrentChunk(caretPosition);
+        return !name.isEmpty() ? getAutocompleteTerms().stream()
+                .filter(term -> term.toLowerCase().contains(name.toLowerCase()))
+                .map(String::toLowerCase)
+                .collect(toList()) : emptyList();
+    }
+
+    private Pair<Integer, Integer> getCurrentChunkBounds(String text, int caretPosition) {
+        int startPosition = caretPosition;
+        while (startPosition >= 0 && notWhitespace(text.charAt(startPosition))) startPosition--;
+
+        int endPosition = caretPosition;
+        while (endPosition < text.length() && notWhitespace(text.charAt(endPosition))) endPosition++;
+
+        return new Pair<>(startPosition + 1, endPosition - 1);
+    }
+
+    private String getCurrentChunk(int caretPosition) {
+        String text = tryGetText();
+        if (text == null) return " ";
+        Pair<Integer, Integer> bounds = getCurrentChunkBounds(text, caretPosition);
+        return text.substring(bounds.first(), bounds.second() + 1);
+    }
+
+    private List<String> getAutocompleteTerms() {
+        return keywords;
+    }
+
+    void replaceCurrentChunk(int caretPosition, String replace) {
+        String text = tryGetText();
+        if (text == null) return;
+
+        Pair<Integer, Integer> bounds = getCurrentChunkBounds(text, caretPosition);
+        try {
+            replace(bounds.first(), bounds.second() - bounds.first() + 1, replace, SimpleAttributeSet.EMPTY);
+        } catch (BadLocationException ignored) {
+        }
     }
 }
