@@ -35,11 +35,7 @@ public class Scanner {
         return result;
     }
 
-    public Token scanWord(String word) {
-        return scanWord(new MyIterator<>(getChars(word)));
-    }
-
-    public Token scanWord(MyIterator<Character> iterator) {
+    private Token scanWord(MyIterator<Character> iterator) {
         int state;
         state = transitionTable.getStartState();
         String lexeme = "";
@@ -51,7 +47,7 @@ public class Scanner {
             lexeme += nextChar;
             if (state > 0 && transitionTable.getPos(state) != null) states.clear();
             states.push(state);
-            state = transitionTable.getTransitions().get(state).getOrDefault(nextChar, -1);
+            state = transitionTable.getNextState(state, nextChar);
             iterator.advance();
         }
 

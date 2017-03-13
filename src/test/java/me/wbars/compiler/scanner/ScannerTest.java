@@ -145,4 +145,23 @@ public class ScannerTest extends TestCase {
                 tokens
         );
     }
+
+
+    public void testUnicode() throws Exception {
+        TransitionTable table = getTableFromString("" +
+                "S s\n" +
+                "ANY .+");
+        Token[] tokens = Scanner.scan(
+                "s s абвгд",
+                table
+        ).toArray(new Token[0]);
+
+        Token S = Token.create("S", "s");
+        Token UNICODE = Token.create("ANY", "абвгд");
+
+        assertArrayEquals(
+                new Token[]{S, S, UNICODE},
+                tokens
+        );
+    }
 }

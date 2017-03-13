@@ -9,9 +9,10 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toSet;
 
 public class DFA {
     public static DfaNode transform(StateComponent component) {
@@ -24,28 +25,36 @@ public class DFA {
         Set<Character> alphabet = NFA.alphabet();
         while (!queue.isEmpty()) {
             DfaNode nextNode = queue.poll();
-            for (char letter : alphabet) {
-                Set<State> accessibleStates = getAccessibleStates(nextNode, letter);
-                if (accessibleStates.isEmpty()) continue;
-
-                DfaNode node;
-                DfaNode newNode = DfaNode.create(accessibleStates);
-                if (!visitedNodes.contains(newNode)) {
-                    node = newNode;
-                } else {
-                    node = visitedNodes.stream().filter(newNode::equals).findAny().orElse(newNode);
-                }
-
-                if (!visitedNodes.contains(node)) {
-                    visitedNodes.add(node);
-                    queue.add(node);
-                }
-                if (!node.getStates().isEmpty()) {
-                    nextNode.getEdges().add(new DfaNode.Edge(letter, node));
-                }
-            }
+            alphabet.forEach(letter -> addNewNodeToQueue(queue, visitedNodes, nextNode, getAccessibleStates(nextNode, letter), (node) -> DfaNode.Edge.create(letter, node)));
+            addNewNodeToQueue(queue, visitedNodes, nextNode, getAccessibleStatesViaAnyRidge(nextNode), DfaNode.Edge::any);
         }
         return startNode;
+    }
+
+    public static void addNewNodeToQueue(Queue<DfaNode> queue, Set<DfaNode> visitedNodes, DfaNode nextNode, Set<State> accessibleStates, Function<DfaNode, DfaNode.Edge> edgeSupplier) {
+        if (accessibleStates.isEmpty()) return;
+
+        DfaNode newNode = getOrCreate(visitedNodes, accessibleStates);
+        if (!visitedNodes.contains(newNode)) {
+            visitedNodes.add(newNode);
+            queue.add(newNode);
+        }
+        if (!newNode.getStates().isEmpty()) {
+            nextNode.getEdges().add(edgeSupplier.apply(newNode));
+        }
+    }
+
+    private static Set<State> getAccessibleStatesViaAnyRidge(DfaNode node) {
+        return node.getStates().stream()
+                .flatMap(s -> s.getRidges().stream())
+                .filter(Ridge::isAny)
+                .map(Ridge::getTo)
+                .collect(toSet());
+    }
+
+    private static DfaNode getOrCreate(Set<DfaNode> visitedNodes, Set<State> accessibleStates) {
+        DfaNode newNode = DfaNode.create(accessibleStates);
+        return visitedNodes.contains(newNode) ? visitedNodes.stream().filter(newNode::equals).findAny().orElse(newNode) : newNode;
     }
 
 
@@ -54,7 +63,7 @@ public class DFA {
                 .flatMap(s -> s.getRidges().stream())
                 .filter(r -> r.getCh() == ridge)
                 .map(Ridge::getTo)
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     public static Set<DfaNode> getNodes(DfaNode root) {
@@ -75,6 +84,6 @@ public class DFA {
     public static Set<DfaNode> getNodesWithAnyOfState(Set<State> states, Set<DfaNode> nodes) {
         return nodes.stream()
                 .filter(node -> states.stream().anyMatch(node.getStates()::contains))
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 }

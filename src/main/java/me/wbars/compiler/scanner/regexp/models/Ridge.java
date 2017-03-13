@@ -2,23 +2,25 @@ package me.wbars.compiler.scanner.regexp.models;
 
 public class Ridge {
     private final boolean empty;
+    private final boolean any;
     private final char ch;
     private final State to;
     private final State from;
 
-    private Ridge(State from, State to, char ch, boolean empty) {
+    private Ridge(State from, State to, char ch, boolean empty, boolean any) {
         this.from = from;
         this.to = to;
         this.ch = ch;
         this.empty = empty;
+        this.any = any;
     }
 
     public static Ridge empty(State from, State to) {
-        return new Ridge(from, to, ' ', true);
+        return new Ridge(from, to, ' ', true, false);
     }
 
-    public static Ridge ridge(State from, State to, char ch) {
-        return new Ridge(from, to, ch, false);
+    public static Ridge ridge(State from, State to, char ch, boolean any) {
+        return new Ridge(from, to, ch, false, any);
     }
 
     public boolean isEmpty() {
@@ -57,5 +59,9 @@ public class Ridge {
 
     public void remove() {
         from.getRidges().remove(this);
+    }
+
+    public boolean isAny() {
+        return any;
     }
 }

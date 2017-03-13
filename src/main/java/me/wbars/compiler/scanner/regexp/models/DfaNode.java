@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.Set;
 
 public class DfaNode {
-    private Set<DfaNode> nodes;
     private static final Set<DfaNode> allNodes = new HashSet<>();
     private static int counter = 0;
     private final int id;
@@ -41,10 +40,20 @@ public class DfaNode {
     public static class Edge {
         private final char ch;
         private final DfaNode node;
+        private final boolean any;
 
-        public Edge(char ch, DfaNode node) {
+        private Edge(char ch, DfaNode node, boolean any) {
             this.ch = ch;
             this.node = node;
+            this.any = any;
+        }
+
+        public static Edge any(DfaNode node) {
+            return new Edge(' ', node, true);
+        }
+
+        public static Edge create(char ch, DfaNode node) {
+            return new Edge(ch, node, false);
         }
 
         public char getCh() {
@@ -71,6 +80,10 @@ public class DfaNode {
             int result = (int) ch;
             result = 31 * result + node.hashCode();
             return result;
+        }
+
+        public boolean isAny() {
+            return any;
         }
     }
 

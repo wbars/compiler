@@ -38,8 +38,8 @@ public class State {
         ridges.add(Ridge.empty(this, to));
     }
 
-    public void addRidge(State to, char ch) {
-        ridges.add(Ridge.ridge(this, to, ch));
+    public void addRidge(State to, char ch, boolean any) {
+        ridges.add(Ridge.ridge(this, to, ch, any));
     }
 
     @Override

@@ -11,6 +11,10 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.lang.Integer.parseInt;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toSet;
+
 public class ScannerFilePersister {
     public static void writeToFile(TransitionTable table, String path) throws IOException {
 
@@ -21,8 +25,20 @@ public class ScannerFilePersister {
         List<String> lines = new ArrayList<>();
 
         lines.addAll(getTransitionTable(table.getTransitions()));
+        lines.addAll(getAnyTransitionTable(table.getAnyTransitions()));
         lines.addAll(getPosTable(table.getPosMap()));
         return lines;
+    }
+
+    private static List<String> getAnyTransitionTable(Map<Integer, Integer> anyTransitions) {
+        List<String> result = new ArrayList<>();
+        result.add(String.valueOf(anyTransitions.size()));
+        result.addAll(
+                anyTransitions.entrySet().stream()
+                        .map(e -> assignConcat(e.getKey().toString(), e.getValue().toString()))
+                        .collect(toSet())
+        );
+        return result;
     }
 
     private static String assignConcat(String s1, String s2) {
@@ -39,7 +55,7 @@ public class ScannerFilePersister {
         result.addAll(
                 transitions.entrySet().stream()
                         .map(e -> getTransitionsSection(e.getKey(), e.getValue()))
-                        .collect(Collectors.toSet())
+                        .collect(toSet())
         );
         return result;
     }
@@ -70,21 +86,35 @@ public class ScannerFilePersister {
     }
 
     public static TransitionTable fromFile(String path) {
-        List<String> lines = null;
+        List<String> lines;
         try {
             lines = Files.readAllLines(Paths.get(path));
         } catch (IOException e) {
             return null;
         }
 
-        int transitionsCount = Integer.parseInt(lines.get(0));
-        Map<Integer, Map<Character, Integer>> transitions = getTransitions(lines.subList(1, transitionsCount + 1));
+        int transitionsCount = parseInt(lines.get(0));
+        int transitionsEnd = transitionsCount + 1;
+        Map<Integer, Map<Character, Integer>> transitions = getTransitions(lines.subList(1, transitionsEnd));
 
-        int posCount = Integer.parseInt(lines.get(transitionsCount + 1));
+        int anyTransitionsCount = parseInt(lines.get(transitionsEnd));
+        int anyTransitionsEnd = transitionsEnd + anyTransitionsCount + 1;
+        Map<Integer, Integer> anyTransitions = getAnyTransitions(lines.subList(transitionsEnd + 1, anyTransitionsEnd));
+
+        int posCount = parseInt(lines.get(anyTransitionsEnd));
         assert lines.size() == posCount;
-        Map<PartOfSpeech, Set<Integer>> dfaPos = getPos(lines.subList(transitionsCount + 2, lines.size()));
+        Map<PartOfSpeech, Set<Integer>> dfaPos = getPos(lines.subList(anyTransitionsEnd + 1, lines.size()));
 
-        return TransitionTable.create(transitions, dfaPos, 0);
+        return TransitionTable.create(transitions, dfaPos, 0, anyTransitions);
+    }
+
+    private static Map<Integer, Integer> getAnyTransitions(List<String> lines) {
+        return lines.stream()
+                .map(ScannerFilePersister::assignSplit)
+                .collect(Collectors.toMap(
+                        s -> parseInt(s[0]),
+                        s -> parseInt(s[1])
+                ));
     }
 
     private static Map<PartOfSpeech, Set<Integer>> getPos(List<String> lines) {
@@ -92,7 +122,7 @@ public class ScannerFilePersister {
                 .map(ScannerFilePersister::assignSplit)
                 .collect(Collectors.toMap(
                         s -> PartOfSpeech.getOrCreate(s[0]),
-                        s -> Arrays.stream(s[1].split(" ")).map(Integer::parseInt).collect(Collectors.toSet()))
+                        s -> stream(s[1].split(" ")).map(Integer::parseInt).collect(toSet()))
                 );
     }
 
@@ -100,7 +130,7 @@ public class ScannerFilePersister {
         return lines.stream()
                 .map(ScannerFilePersister::assignSplit)
                 .collect(Collectors.toMap(
-                        s -> Integer.parseInt(s[0]),
+                        s -> parseInt(s[0]),
                         s -> s.length > 1 ? getTransitions(s[1]) : Collections.emptyMap()
                 ));
     }
@@ -115,8 +145,8 @@ public class ScannerFilePersister {
                 itt++;
                 sb.append(transitionsString.charAt(itt));
             }
-            result.put(key, Integer.parseInt(sb.toString()));
-            itt+= 2;
+            result.put(key, parseInt(sb.toString()));
+            itt += 2;
         }
         return result;
     }

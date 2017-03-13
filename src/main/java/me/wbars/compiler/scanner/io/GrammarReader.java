@@ -7,7 +7,9 @@ import me.wbars.compiler.scanner.regexp.NFA;
 import me.wbars.compiler.scanner.regexp.models.DfaNode;
 import me.wbars.compiler.scanner.regexp.models.StateComponent;
 
+import java.util.AbstractMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,7 +41,19 @@ public abstract class GrammarReader {
                         Map.Entry::getKey,
                         e -> toInts(DFA.getNodesWithAnyOfState(NFA.getTerminalStates(e.getValue()), nodes)))
                 );
-        return TransitionTable.create(transitionsToInts(getTransitions(nodes)), dfaPos, toInt(dfa));
+        return TransitionTable.create(transitionsToInts(getTransitions(nodes)), dfaPos, toInt(dfa), anyTransitionsToInts(getAnyTransition(nodes)));
+    }
+
+    private Map<Integer, Integer> anyTransitionsToInts(Map<DfaNode, DfaNode> anyTransitions) {
+        return anyTransitions.entrySet().stream()
+                .collect(Collectors.toMap(e -> toInt(e.getKey()), e -> toInt(e.getValue())));
+    }
+
+    private Map<DfaNode, DfaNode> getAnyTransition(Set<DfaNode> nodes) {
+        return nodes.stream()
+                .map(node -> new AbstractMap.SimpleEntry<>(node, getAnyTransition(node)))
+                .filter(e -> e.getValue().isPresent())
+                .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, e -> e.getValue().get()));
     }
 
     private static Map<DfaNode, Map<Character, DfaNode>> getTransitions(Set<DfaNode> nodes) {
@@ -47,8 +61,16 @@ public abstract class GrammarReader {
                 .collect(Collectors.toMap(Function.identity(), GrammarReader::getTransitions));
     }
 
+    private static Optional<DfaNode> getAnyTransition(DfaNode node) {
+        return node.getEdges().stream()
+                .filter(DfaNode.Edge::isAny)
+                .map(DfaNode.Edge::getNode)
+                .findAny();
+    }
+
     private static Map<Character, DfaNode> getTransitions(DfaNode node) {
         return node.getEdges().stream()
+                .filter(e -> !e.isAny())
                 .collect(Collectors.toMap(DfaNode.Edge::getCh, DfaNode.Edge::getNode));
     }
 

@@ -48,7 +48,6 @@ public class NFA {
         macros = new HashMap<>();
         macros.put('d', "0|1|2|3|4|5|6|7|8|9");
         macros.put('w', "a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|_");
-        macros.put('.', "\\w|\\d|\\s|!|\"|#|$|%|&|\\(|\\)|\\*|\\+|,|\\-|.|/|:|;|<|=|>|?|@|[|\\\\|]|^|_|`|{|\\|}|~|\\|");
         macros.put('s', " ");
 
         reservedMappers = new ArrayList<>();
@@ -176,7 +175,7 @@ public class NFA {
     private static StateComponent create(char ch) {
         State head = State.create();
         State tail = State.create();
-        head.addRidge(tail, ch);
+        head.addRidge(tail, ch, ch == '.');
         return StateComponent.create(head, tail);
     }
 
@@ -246,7 +245,7 @@ public class NFA {
 
     private static void getTransitiveRidges(StateComponent component) {
         getStates(component).forEach(state -> getTransitiveRidges(state)
-                .forEach(transitiveRidge -> state.addRidge(transitiveRidge.getTo(), transitiveRidge.getCh()))
+                .forEach(transitiveRidge -> state.addRidge(transitiveRidge.getTo(), transitiveRidge.getCh(), transitiveRidge.isAny()))
         );
     }
 
@@ -255,7 +254,7 @@ public class NFA {
                 .filter(Ridge::isEmpty)
                 .flatMap(firstRidge -> firstRidge.getTo().getRidges().stream())
                 .filter(secondRidge -> !secondRidge.isEmpty())
-                .map(secondRidge -> Ridge.ridge(state, secondRidge.getTo(), secondRidge.getCh()))
+                .map(secondRidge -> Ridge.ridge(state, secondRidge.getTo(), secondRidge.getCh(), secondRidge.isAny()))
                 .collect(Collectors.toSet());
     }
 
