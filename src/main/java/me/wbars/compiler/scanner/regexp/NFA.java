@@ -4,11 +4,13 @@ import me.wbars.compiler.scanner.regexp.models.CharacterIterator;
 import me.wbars.compiler.scanner.regexp.models.Ridge;
 import me.wbars.compiler.scanner.regexp.models.State;
 import me.wbars.compiler.scanner.regexp.models.StateComponent;
+import me.wbars.compiler.utils.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.toSet;
 import static java.util.stream.IntStream.rangeClosed;
 
 public class NFA {
@@ -19,7 +21,7 @@ public class NFA {
     public static Set<State> getTerminalStates(StateComponent component) {
         return getStates(component).stream()
                 .filter(State::isTerminal)
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     private interface ComponentMapper {
@@ -210,13 +212,13 @@ public class NFA {
         return StateComponent.create(head, tail);
     }
 
-    public static Set<Ridge> getRidges(StateComponent component) {
+    private static Set<Ridge> getRidges(StateComponent component) {
         return getStates(component).stream()
                 .flatMap(s -> s.getRidges().stream())
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
-    public static Set<State> getStates(StateComponent component) {
+    private static Set<State> getStates(StateComponent component) {
         Set<State> result = new HashSet<>();
         dfs(component.getHead(), result, new HashSet<>());
         return result;
@@ -255,7 +257,7 @@ public class NFA {
                 .flatMap(firstRidge -> firstRidge.getTo().getRidges().stream())
                 .filter(secondRidge -> !secondRidge.isEmpty())
                 .map(secondRidge -> Ridge.ridge(state, secondRidge.getTo(), secondRidge.getCh(), secondRidge.isAny()))
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     private static void addTerminalStates(StateComponent component) {
@@ -270,14 +272,15 @@ public class NFA {
     }
 
     private static void addDirectRidges(StateComponent component) {
-        Set<State> states = getStates(component);
-        Map<State, Set<State>> closures = new HashMap<>();
-        for (State state : states) {
-            Set<State> accessibleStates = new HashSet<>();
-            epsilonDfs(state, accessibleStates, new HashSet<>());
-            closures.put(state, accessibleStates);
-        }
-        closures.forEach((state, closure) -> closure.forEach(state::addEmptyRidge));
+        getStates(component).stream()
+                .map(NFA::epsilonAccessibleStates)
+                .forEach(e -> e.second().forEach(e.first()::addEmptyRidge));
+    }
+
+    private static Pair<State, Set<State>> epsilonAccessibleStates(State state) {
+        Set<State> accessibleStates = new HashSet<>();
+        epsilonDfs(state, accessibleStates, new HashSet<>());
+        return new Pair<>(state, accessibleStates);
     }
 
     private static void epsilonDfs(State state, Set<State> accessibleStates, Set<State> visited) {

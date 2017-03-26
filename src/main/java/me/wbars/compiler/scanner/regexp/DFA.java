@@ -54,7 +54,7 @@ public class DFA {
 
     private static DfaNode getOrCreate(Set<DfaNode> visitedNodes, Set<State> accessibleStates) {
         DfaNode newNode = DfaNode.create(accessibleStates);
-        return visitedNodes.contains(newNode) ? visitedNodes.stream().filter(newNode::equals).findAny().orElse(newNode) : newNode;
+        return visitedNodes.stream().filter(newNode::equals).findAny().orElse(newNode);
     }
 
 
