@@ -10,6 +10,7 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class Scanner {
+    private static final int INVALID_STATE = -1;
     private final TransitionTable transitionTable;
 
     public static List<Token> scan(String content, TransitionTable transitionTable) {
@@ -36,13 +37,12 @@ public class Scanner {
     }
 
     private Token scanWord(MyIterator<Character> iterator) {
-        int state;
-        state = transitionTable.getStartState();
+        int state = transitionTable.getStartState();
         String lexeme = "";
         Stack<Integer> states = new Stack<>();
-        states.push(-1);
+        states.push(INVALID_STATE);
 
-        while (state != -1 && iterator.notFinished()) {
+        while (state != INVALID_STATE && iterator.notFinished()) {
             char nextChar = iterator.current();
             lexeme += nextChar;
             if (state > 0 && transitionTable.getPos(state) != null) states.clear();
@@ -56,10 +56,7 @@ public class Scanner {
             lexeme = lexeme.substring(0, lexeme.length() - 1);
             iterator.descent();
         }
-        if (state < 0 || lexeme.isEmpty()) {
-            return null;
-        }
-        return new Token(transitionTable.getPos(state), lexeme);
+        return state != INVALID_STATE && !lexeme.isEmpty() ? new Token(transitionTable.getPos(state), lexeme) : null;
     }
 
     private static List<Character> getChars(String content) {
